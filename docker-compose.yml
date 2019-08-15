@@ -1,0 +1,13 @@
+
+version: '3'
+
+services:
+
+  chronoi-preprocessing:
+    build: .
+    container_name: "chronoi-preprocessing"
+    image: chronoi-preprocessing
+    volumes:
+      - .:/srv/preprocessing:ro
+      - ${INPUT_DIR}:/srv/input:ro
+      - ${OUTPUT_DIR}:/srv/output:rw

@@ -1,0 +1,2 @@
+# Ignore docker-compose variables
+.env
