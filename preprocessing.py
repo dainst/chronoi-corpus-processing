@@ -2,6 +2,7 @@
 
 import os
 import glob
+from shutil import copyfile
 
 from cleaning import *
 from file_scheme import FileScheme
@@ -121,4 +122,9 @@ if __name__ == "__main__":
     input_files.sort()
     for path in input_files:
         file_scheme = FileScheme(path)
-        extractor.extract(path, file_scheme.get_path_for_extracted_text())
+        out_path = file_scheme.get_path_for_extracted_text()
+        extractor.extract(path, out_path)
+        # put a copy of the extract into the
+        copy_path = file_scheme.get_path_for_manual_cleaning()
+        os.makedirs(os.path.dirname(copy_path), 0o777, True)
+        copyfile(out_path, copy_path)
