@@ -2,7 +2,9 @@
 FROM python:3
 
 # install python dependencies
-RUN pip3 install nltk
+RUN pip3 install nltk \
+    chardet \
+    pdfminer.six
 
 # install general dependencies
 RUN apt-get update

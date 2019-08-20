@@ -1,68 +1,13 @@
 #!/usr/bin/env python3
 
-import nltk
-import subprocess
-import time
 import os
+import glob
 
 from cleaning import *
+from file_scheme import FileScheme
+from text_extraction import PdfTextExtractor
 
 input_dir = "/srv/input"
-
-ghostscript_params = [
-    "gs",
-    "-sDEVICE=txtwrite",
-    "-dNOPAUSE",
-    "-dBATCH",
-]
-
-
-class FileScheme:
-    DOCUMENT_STEP_TEMPLATE = "-step%04d.txt"
-    PAGE_STEP_TEMPLATE = "-page%04d-step%04d.txt"
-    FIRST_STEP_TEMPLATE = "-page%04d-step0000.txt"
-
-    input_path = ""
-    basename = ""
-    output_dir = "/srv/output"
-    output_basepath = ""
-
-    def __init__(self, path):
-        self.input_path = path
-        (basepath, _) = os.path.splitext(path)
-        self.basename = os.path.basename(basepath)
-        self.output_basepath = f"{self.output_dir}/{self.basename}"
-
-    def build_output_file_template(self):
-        return self.output_basepath + self.FIRST_STEP_TEMPLATE
-
-    def get_file_for_page_and_step(self, page_no, step_no):
-        template = self.output_basepath + self.PAGE_STEP_TEMPLATE
-        return template % (page_no, step_no)
-
-    def get_file_for_document_and_step(self, step_no):
-        template = self.output_basepath + self.DOCUMENT_STEP_TEMPLATE
-        return template % step_no
-
-    def read_page_file(self, page_no, step_no):
-        file_path = self.get_file_for_page_and_step(page_no, step_no)
-        # assert (os.path.isfile(file_path)), f"File does not exist: {file_path}"
-        with open(file_path, 'r') as f:
-            return f.read()
-
-    def write_page_file(self, page_no, step_no, content):
-        file_path = self.get_file_for_page_and_step(page_no, step_no)
-        self.__write_file(file_path, content)
-
-    def write_document_file(self, step_no, content):
-        file_path = self.get_file_for_document_and_step(step_no)
-        self.__write_file(file_path, content)
-
-    @staticmethod
-    def __write_file(file_path, content):
-        # assert not(os.path.isfile(file_path)), f"File already exists: {file_path}"
-        with open(file_path, 'w') as f:
-            f.write(content)
 
 
 class Page:
@@ -108,11 +53,11 @@ class PdfDocument:
         self.file_scheme = FileScheme(path)
 
     def convert_pages_to_text(self):
+        in_path = self.file_scheme.input_path
         # ghostscript directly accepts a printf-like template with "%d" in it
-        output_file_param = "-sOutputFile=%s" % self.file_scheme.build_output_file_template()
-        params = ghostscript_params + [output_file_param, self.file_scheme.input_path]
-        subprocess.call(params)
-        return
+        out_path = self.file_scheme.build_output_file_template()
+        extractor = PdfTextExtractor(PdfTextExtractor.Strategy.Ghostscript)
+        extractor.extract(in_path, out_path)
 
     def __iter_pages(self):
         for page_no in range(1, self.max_page + 1):
@@ -153,19 +98,27 @@ class PdfDocument:
 
 
 if __name__ == "__main__":
-    doc = PdfDocument(input_dir + "/01_Funke2019.pdf")
-    print(doc.file_scheme.input_path)
-    print(doc.file_scheme.basename)
-    print(doc.file_scheme.output_dir)
-    print(doc.file_scheme.output_basepath)
+    # doc = PdfDocument(input_dir + "/01_Funke2019.pdf")
+    # print(doc.file_scheme.input_path)
+    # print(doc.file_scheme.basename)
+    # print(doc.file_scheme.output_dir)
+    # print(doc.file_scheme.output_basepath)
+    #
+    # doc.convert_pages_to_text()
+    #
+    # doc.apply_to_page_texts(page_remove_first_line)
+    # doc.apply_to_page_lines(line_delete_text_surrounded_by_whitespace_left)
+    # doc.apply_to_page_lines(lambda l: line_delete_if_whitespace_exceeds(l, 0.85))
+    # doc.apply_to_page_lines(lambda l: l.strip())
+    # doc.apply_to_page_texts(lambda p: "\n".join([line for line in p.splitlines() if line != ""]))
+    # doc.apply_to_page_lines(line_delete_text_surrounded_by_whitespace_right)
+    #
+    # doc.combine_pages()
 
-    doc.convert_pages_to_text()
+    extractor = PdfTextExtractor(PdfTextExtractor.Strategy.PdfMiner)
 
-    doc.apply_to_page_texts(page_remove_first_line)
-    doc.apply_to_page_lines(line_delete_text_surrounded_by_whitespace_left)
-    doc.apply_to_page_lines(lambda l: line_delete_if_whitespace_exceeds(l, 0.85))
-    doc.apply_to_page_lines(lambda l: l.strip())
-    doc.apply_to_page_texts(lambda p: "\n".join([line for line in p.splitlines() if line != ""]))
-    doc.apply_to_page_lines(line_delete_text_surrounded_by_whitespace_right)
-
-    doc.combine_pages()
+    input_files = glob.glob(f"{input_dir}/*.pdf")
+    input_files.sort()
+    for path in input_files:
+        file_scheme = FileScheme(path)
+        extractor.extract(path, file_scheme.get_path_for_extracted_text())
