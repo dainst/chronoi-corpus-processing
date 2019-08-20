@@ -7,7 +7,7 @@ import os
 
 from cleaning import *
 
-input_dir="/srv/input"
+input_dir = "/srv/input"
 
 ghostscript_params = [
     "gs",
@@ -16,8 +16,8 @@ ghostscript_params = [
     "-dBATCH",
 ]
 
-class FileScheme:
 
+class FileScheme:
     DOCUMENT_STEP_TEMPLATE = "-step%04d.txt"
     PAGE_STEP_TEMPLATE = "-page%04d-step%04d.txt"
     FIRST_STEP_TEMPLATE = "-page%04d-step0000.txt"
@@ -58,18 +58,19 @@ class FileScheme:
         file_path = self.get_file_for_document_and_step(step_no)
         self.__write_file(file_path, content)
 
-    def __write_file(self, file_path, content):
+    @staticmethod
+    def __write_file(file_path, content):
         # assert not(os.path.isfile(file_path)), f"File already exists: {file_path}"
         with open(file_path, 'w') as f:
             f.write(content)
 
-class Page:
 
+class Page:
     page_no = 0
     current_step = 0
     file_scheme = None
 
-    def __init__(self, file_scheme, page_no, step_no = 0):
+    def __init__(self, file_scheme, page_no, step_no=0):
         self.file_scheme = file_scheme
         self.page_no = page_no
         self.current_step = step_no
@@ -91,32 +92,30 @@ class Page:
         self.save_result(new_text)
 
     def apply_to_lines(self, callback):
-        lines = [ callback(l) for l in self.get_lines() ]
+        lines = [callback(l) for l in self.get_lines()]
         new_text = "\n".join(lines)
         self.save_result(new_text)
 
 
 class PdfDocument:
-
     max_page = 66
     file_scheme = None
     current_step = 0
 
     def __init__(self, path):
         assert os.path.isfile(path) and os.access(path, os.R_OK), \
-            f"File is not present or not readble: {path}"
+            f"File is not present or not readable: {path}"
         self.file_scheme = FileScheme(path)
 
     def convert_pages_to_text(self):
         # ghostscript directly accepts a printf-like template with "%d" in it
         output_file_param = "-sOutputFile=%s" % self.file_scheme.build_output_file_template()
-        params = ghostscript_params + [ output_file_param, self.file_scheme.input_path ]
+        params = ghostscript_params + [output_file_param, self.file_scheme.input_path]
         subprocess.call(params)
         return
 
     def __iter_pages(self):
         for page_no in range(1, self.max_page + 1):
-
             # DONTCOMMIT
             # if (page_no != 3 and page_no != 4):
             #     continue
@@ -148,15 +147,12 @@ class PdfDocument:
         self.__increment_step_no()
 
     def combine_pages(self):
-        text = "\f".join([ p.get_text() for p in self.__iter_pages() ])
+        text = "\f".join([p.get_text() for p in self.__iter_pages()])
         self.file_scheme.write_document_file(self.current_step, text)
         self.__increment_step_no()
 
 
-
-
 if __name__ == "__main__":
-
     doc = PdfDocument(input_dir + "/01_Funke2019.pdf")
     print(doc.file_scheme.input_path)
     print(doc.file_scheme.basename)
@@ -169,7 +165,7 @@ if __name__ == "__main__":
     doc.apply_to_page_lines(line_delete_text_surrounded_by_whitespace_left)
     doc.apply_to_page_lines(lambda l: line_delete_if_whitespace_exceeds(l, 0.85))
     doc.apply_to_page_lines(lambda l: l.strip())
-    doc.apply_to_page_texts(lambda p: "\n".join([ l for l in p.splitlines() if l != ""]))
+    doc.apply_to_page_texts(lambda p: "\n".join([line for line in p.splitlines() if line != ""]))
     doc.apply_to_page_lines(line_delete_text_surrounded_by_whitespace_right)
 
     doc.combine_pages()

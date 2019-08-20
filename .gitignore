@@ -1,2 +1,5 @@
 # Ignore docker-compose variables
 .env
+
+# Ignore pycharm
+.idea
