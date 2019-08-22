@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
-import os
 import glob
+import os
 import shutil
 
-from cleaning import *
 from file_scheme import FileScheme
 from text_extraction import PdfTextExtractor
 
@@ -18,14 +17,14 @@ if __name__ == "__main__":
     for path in input_files:
         files = FileScheme(path)
 
-        # step 001: text extraction
-        out_path = files.get_path_for_extracted_text()
+        files.add_step(1, "extracted_texts")
+        out_path = files.get_path_for_step(1)
         if not files.file_exists(out_path):
             extractor.extract(path, out_path)
 
-        # step 002: Save a copy for manual correction
-        copy_path = files.get_path_for_manual_cleaning()
-        done_path = files.get_path_for_manually_cleaned_file()
+        files.add_step(2, "manual_cleaning")
+        copy_path = files.get_todo_path_for_step(2)
+        done_path = files.get_done_path_for_step(2)
         if not (files.file_exists(copy_path) or files.file_exists(done_path)):
             os.makedirs(os.path.dirname(copy_path), 0o777, True)
             shutil.copyfile(out_path, copy_path)

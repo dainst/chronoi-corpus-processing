@@ -6,22 +6,27 @@ class FileScheme:
 
     # TODO: Should be an ENV variable / env variables
     output_dir = "/srv/output"
-    __DIR_EXTRACTED_TEXTS = f"{output_dir}/001_extracted_texts"
-    __DIR_MANUAL_CLEANING = f"{output_dir}/002_manual_cleaning"
-
-    DOCUMENT_STEP_TEMPLATE = "-step%04d.txt"
-    PAGE_STEP_TEMPLATE = "-page%04d-step%04d.txt"
-    FIRST_STEP_TEMPLATE = "-page%04d-step0000.txt"
 
     input_path = ""
     basename = ""
     output_basepath = ""
 
     def __init__(self, path: str):
+        self.steps = {
+            # 1 => "extract_texts,
+            # 2 => "manual_cleaning",
+            # ...
+        }
         self.input_path = path
         (basepath, _) = os.path.splitext(path)
         self.basename = os.path.basename(basepath)
         self.output_basepath = f"{self.output_dir}/{self.basename}"
+
+    def add_step(self, step_no: int, step_name: str):
+        if step_no in self.steps.keys():
+            raise Exception("Step number already exists")
+        else:
+            self.steps[step_no] = step_name
 
     @staticmethod
     def __write_file(file_path, content):
@@ -29,20 +34,25 @@ class FileScheme:
         with open(file_path, 'w') as f:
             f.write(content)
 
-    def __get_path(self, dir, extension):
-        return f"{dir}/{self.basename}.{extension}"
+    def __get_path(self, directory: str, extension):
+        return f"{directory}/{self.basename}.{extension}"
 
-    def __get_path_with_instruction_in_filename(self, dir: str, instruction: str, extension: str):
-        return f"{dir}/{self.basename}-{instruction}.{extension}"
+    def __get_path_with_instruction_in_filename(self, directory: str, instruction: str, extension: str):
+        return f"{directory}/{self.basename}-{instruction}.{extension}"
 
-    def get_path_for_extracted_text(self):
-        return self.__get_path(self.__DIR_EXTRACTED_TEXTS, "txt")
+    def __get_dirname_for_step(self, step_no: int):
+        number_str = "%03d" % step_no
+        folder_name = f"{number_str}_{self.steps[step_no]}"
+        return os.path.join(self.output_dir, folder_name)
 
-    def get_path_for_manual_cleaning(self):
-        return self.__get_path_with_instruction_in_filename(self.__DIR_MANUAL_CLEANING, "TODO", "txt")
+    def get_path_for_step(self, step_no: int) -> str:
+        return self.__get_path(self.__get_dirname_for_step(step_no), "txt")
 
-    def get_path_for_manually_cleaned_file(self):
-        return self.__get_path_with_instruction_in_filename(self.__DIR_MANUAL_CLEANING, "DONE", "txt")
+    def get_todo_path_for_step(self, step_no: int) -> str:
+        return self.__get_path_with_instruction_in_filename(self.__get_dirname_for_step(step_no), "TODO", "txt")
+
+    def get_done_path_for_step(self, step_no: int) -> str:
+        return self.__get_path_with_instruction_in_filename(self.__get_dirname_for_step(step_no), "DONE", "txt")
 
     @staticmethod
     def file_exists(path: str) -> bool:
