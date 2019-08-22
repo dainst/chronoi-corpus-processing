@@ -47,30 +47,3 @@ class FileScheme:
     @staticmethod
     def file_exists(path: str) -> bool:
         return os.path.isfile(path)
-
-    # TODO: Check if these functions are needed any longer
-
-    def build_output_file_template(self):
-        return self.output_basepath + self.FIRST_STEP_TEMPLATE
-
-    def get_file_for_page_and_step(self, page_no, step_no):
-        template = self.output_basepath + self.PAGE_STEP_TEMPLATE
-        return template % (page_no, step_no)
-
-    def get_file_for_document_and_step(self, step_no):
-        template = self.output_basepath + self.DOCUMENT_STEP_TEMPLATE
-        return template % step_no
-
-    def read_page_file(self, page_no, step_no):
-        file_path = self.get_file_for_page_and_step(page_no, step_no)
-        # assert (os.path.isfile(file_path)), f"File does not exist: {file_path}"
-        with open(file_path, 'r') as f:
-            return f.read()
-
-    def write_page_file(self, page_no, step_no, content):
-        file_path = self.get_file_for_page_and_step(page_no, step_no)
-        self.__write_file(file_path, content)
-
-    def write_document_file(self, step_no, content):
-        file_path = self.get_file_for_document_and_step(step_no)
-        self.__write_file(file_path, content)
