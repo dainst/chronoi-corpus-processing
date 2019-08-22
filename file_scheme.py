@@ -32,14 +32,21 @@ class FileScheme:
     def __get_path(self, dir, extension):
         return f"{dir}/{self.basename}.{extension}"
 
-    def __get_todo_path(self, dir, extension):
-        return f"{dir}/{self.basename}-TODO.{extension}"
+    def __get_path_with_instruction_in_filename(self, dir: str, instruction: str, extension: str):
+        return f"{dir}/{self.basename}-{instruction}.{extension}"
 
     def get_path_for_extracted_text(self):
         return self.__get_path(self.__DIR_EXTRACTED_TEXTS, "txt")
 
     def get_path_for_manual_cleaning(self):
-        return self.__get_todo_path(self.__DIR_MANUAL_CLEANING, "txt")
+        return self.__get_path_with_instruction_in_filename(self.__DIR_MANUAL_CLEANING, "TODO", "txt")
+
+    def get_path_for_manually_cleaned_file(self):
+        return self.__get_path_with_instruction_in_filename(self.__DIR_MANUAL_CLEANING, "DONE", "txt")
+
+    @staticmethod
+    def file_exists(path: str) -> bool:
+        return os.path.isfile(path)
 
     # TODO: Check if these functions are needed any longer
 

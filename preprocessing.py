@@ -2,7 +2,7 @@
 
 import os
 import glob
-from shutil import copyfile
+import shutil
 
 from cleaning import *
 from file_scheme import FileScheme
@@ -121,10 +121,16 @@ if __name__ == "__main__":
     input_files = glob.glob(f"{input_dir}/*.pdf")
     input_files.sort()
     for path in input_files:
-        file_scheme = FileScheme(path)
-        out_path = file_scheme.get_path_for_extracted_text()
-        extractor.extract(path, out_path)
-        # put a copy of the extract into the
-        copy_path = file_scheme.get_path_for_manual_cleaning()
-        os.makedirs(os.path.dirname(copy_path), 0o777, True)
-        copyfile(out_path, copy_path)
+        files = FileScheme(path)
+
+        # step 001: text extraction
+        out_path = files.get_path_for_extracted_text()
+        if not files.file_exists(out_path):
+            extractor.extract(path, out_path)
+
+        # step 002: Save a copy for manual correction
+        copy_path = files.get_path_for_manual_cleaning()
+        done_path = files.get_path_for_manually_cleaned_file()
+        if not (files.file_exists(copy_path) or files.file_exists(done_path)):
+            os.makedirs(os.path.dirname(copy_path), 0o777, True)
+            shutil.copyfile(out_path, copy_path)
