@@ -7,10 +7,6 @@ class FileScheme:
     # TODO: Should be an ENV variable / env variables
     output_dir = "/srv/output"
 
-    input_path = ""
-    basename = ""
-    output_basepath = ""
-
     def __init__(self, path: str):
         self.steps = {
             # 1 => "extract_texts,
@@ -27,12 +23,6 @@ class FileScheme:
             raise Exception("Step number already exists")
         else:
             self.steps[step_no] = step_name
-
-    @staticmethod
-    def __write_file(file_path, content):
-        # assert not(os.path.isfile(file_path)), f"File already exists: {file_path}"
-        with open(file_path, 'w') as f:
-            f.write(content)
 
     def __get_path(self, directory: str, extension):
         return f"{directory}/{self.basename}.{extension}"
@@ -53,6 +43,17 @@ class FileScheme:
 
     def get_done_path_for_step(self, step_no: int) -> str:
         return self.__get_path_with_instruction_in_filename(self.__get_dirname_for_step(step_no), "DONE", "txt")
+
+    @staticmethod
+    def read_file(path: str) -> str:
+        with open(path, 'r') as file:
+            return file.read()
+
+    @staticmethod
+    def write_file(file_path, content):
+        assert not(os.path.isfile(file_path)), f"File already exists: {file_path}"
+        with open(file_path, 'w') as f:
+            f.write(content)
 
     @staticmethod
     def file_exists(path: str) -> bool:
