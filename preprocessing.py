@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
         scheme.add_step(4, "de_hyphenate")
         out_path = scheme.get_path_for_step(4)
-        if True: #not scheme.file_exists(out_path):
+        if not scheme.file_exists(out_path):
             content = scheme.read_file(scheme.get_path_for_step(3))
 
             languages = {"en": "english", "de": "german"}
