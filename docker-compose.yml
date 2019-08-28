@@ -3,11 +3,11 @@ version: '3'
 
 services:
 
-  chronoi-preprocessing:
+  chronoi-pilot:
     build: .
-    container_name: "chronoi-preprocessing"
-    image: chronoi-preprocessing
+    container_name: "chronoi-pilot"
+    image: chronoi-pilot
     volumes:
-      - .:/srv/preprocessing:ro
+      - .:/srv/chronoi-pilot:ro
       - ${INPUT_DIR}:/srv/input:ro
       - ${OUTPUT_DIR}:/srv/output:rw

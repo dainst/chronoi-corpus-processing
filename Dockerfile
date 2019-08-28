@@ -13,7 +13,8 @@ RUN pip3 install nltk \
     langid \
     chardet \
     pdfminer.six \
-    hunspell
+    hunspell \
+    PyICU
 
 # download tokenization data for nltk
 RUN python3 -c "import nltk; nltk.download('punkt')"
@@ -22,17 +23,19 @@ RUN python3 -c "import nltk; nltk.download('punkt')"
 COPY resources/de_DE.aff resources/de_DE.dic /usr/share/hunspell/
 
 # create the log file if it doesn't exist, use ENV as it is available in CMD
-ARG log_file=/var/log/preprocessing.log
+ARG log_file=/var/log/chronoi-pilot.log
 RUN touch ${log_file}
 ENV LOG=${log_file}
 
 # prepare directories to be mounted externally
-RUN mkdir -p /srv/input /srv/output
-VOLUME /srv/input /srv/output
+ENV INPUT_DIR=/srv/input
+ENV OUTPUT_DIR=/srv/output
+RUN mkdir -p ${INPUT_DIR} ${OUTPUT_DIR}
+VOLUME ${INPUT_DIR} ${OUTPUT_DIR}
 
 # setup the files
-WORKDIR /srv/preprocessing
-ADD . /srv/preprocessing
+WORKDIR /srv/chronoi-pilot
+ADD . /srv/chronoi-pilot
 
 # follow the log file
 CMD /usr/bin/tail -n0 -f "${LOG}"
