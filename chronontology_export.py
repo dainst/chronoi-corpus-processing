@@ -165,7 +165,7 @@ class HeidelTimeWriter:
         return [self.__norm_line(name) for name in self.temponym.get_names(lang_code)]
 
     def __norm_line(self, name) -> str:
-        return '"%s", "%s"' % (name, self.write_epoch_range())
+        return '"%s","%s"' % (name, self.write_epoch_range())
 
     @classmethod
     def __collect_lines(cls, temponyms: list, lang_code: str, callback) -> list:
