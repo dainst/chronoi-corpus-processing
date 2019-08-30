@@ -11,3 +11,10 @@ services:
       - .:/srv/chronoi-pilot:ro
       - ${INPUT_DIR}:/srv/input:ro
       - ${OUTPUT_DIR}:/srv/output:rw
+
+  heideltime:
+    build: ./heideltime
+    container_name: "heideltime"
+    image: heideltime
+    volumes:
+      - ${OUTPUT_DIR}:/srv/output:rw
