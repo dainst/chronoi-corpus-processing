@@ -22,9 +22,7 @@ def write_file_with_permissions(path: str, content: str, chmod_mode=0o776, open_
     os.chmod(path, chmod_mode)
 
 
-def write_lines_to_resource_file(strings: list, file_name: str):
-    out_dir = os.path.realpath(os.environ["OUTPUT_DIR"])
-    path = os.path.join(out_dir, "heideltime_temponym_files", file_name)
+def write_lines_to_resource_file(strings: list, path: str):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     write_file_with_permissions(path=path, content="\n".join(strings))
 
@@ -60,8 +58,6 @@ class EpochBorder:
         elif "notBefore" in part and "notAfter" in part:
             eb.earliest = cls.__parse_chronontology_year(part["notBefore"])
             eb.latest = cls.__parse_chronontology_year(part["notAfter"])
-        else:
-            print("----> ", part)
         return eb
 
 
@@ -85,9 +81,7 @@ class Temponym:
         names: dict = res["names"]
         temponym = Temponym(id_string, names)
 
-        if "hasTimespan" not in res:
-            print(f"Resource without a Timespan: {id} (%s)" % names)
-        else:
+        if "hasTimespan" in res:
             for timespan in res["hasTimespan"]:
                 if "begin" in timespan and "end" in timespan:
                     temponym.begin = EpochBorder.from_chronontology_timespan_part(timespan["begin"])
@@ -96,6 +90,8 @@ class Temponym:
                     continue
                 else:
                     print("Timespan not parsable: ", timespan)
+        # else:
+        #     print(f"Resource without a Timespan: {id} (%s)" % names)
         return temponym
 
     def has_begin(self) -> bool:
@@ -185,9 +181,7 @@ class HeidelTimeWriter:
         return cls.__collect_lines(temponyms, lang_code, cls.__pattern_line)
 
 
-if __name__ == '__main__':
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    export_file = os.path.join(script_dir, "resources", "chronontology.json")
+def do_chronontology_export(export_file, output_directory):
 
     # read the export file
     with open(export_file) as file:
@@ -241,10 +235,20 @@ if __name__ == '__main__':
 
         write_lines_to_resource_file(
             HeidelTimeWriter.collect_pattern_lines(ts, lc),
-            file_names[0]
+            os.path.join(output_directory, file_names[0])
         )
 
         write_lines_to_resource_file(
             HeidelTimeWriter.collect_norm_lines(ts, lc),
-            file_names[1]
+            os.path.join(output_directory, file_names[1])
         )
+
+
+if __name__ == '__main__':
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    export_file = os.path.join(script_dir, "resources", "chronontology.json")
+
+    corpus_out_dir = os.path.realpath(os.environ["OUTPUT_DIR"])
+    out_dir = os.path.join(corpus_out_dir, "heideltime_temponym_files")
+
+    do_chronontology_export(export_file, out_dir)
