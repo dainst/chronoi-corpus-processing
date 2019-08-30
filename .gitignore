@@ -3,3 +3,6 @@
 
 # Ignore pycharm
 .idea
+
+# Ignore the checksum file used by the heideltime container
+heideltime/.temponym-files-checksum

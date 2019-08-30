@@ -53,7 +53,7 @@ java -jar /srv/app/heideltime/target/de.unihd.dbs.heideltime.standalone.jar -c /
 
 # Do a test annotation
 RUN echo "Did we install heideltime today?" > /tmp/test.txt
-RUN heideltime -l english -t scientific -dct 1970-01-01 /tmp/test.txt
+RUN heideltime -l english -t scientific -dct 1970-01-01 /tmp/test.txt && rm /tmp/test.txt
 
 # keep the container running when started
 CMD /bin/sleep infinity

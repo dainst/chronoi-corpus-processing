@@ -17,4 +17,5 @@ services:
     container_name: "heideltime"
     image: heideltime
     volumes:
+      - ./heideltime:/srv/app/scripts:rw
       - ${OUTPUT_DIR}:/srv/output:rw
