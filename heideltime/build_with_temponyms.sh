@@ -10,7 +10,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 checksum_path="${DIR}/.temponym-files-checksum"
 
 # check if the checksum changed since this was last executed
-if tar c "$dir_temponym_files" 2> /dev/null | md5sum --check "$checksum_path" --status
+if md5sum --check "$checksum_path" --status
 then
     echo "No changed files. Not rebuilding Heideltime."
     exit 0
@@ -46,4 +46,4 @@ mvn -f "${dir_heideltime_app}/pom.xml" clean package
 sed -i 's|^considerTemponym =.*$|considerTemponym = true|g' "$config_file"
 
 # create a new checksum
-tar c "$dir_temponym_files" 2>/dev/null | md5sum > "$checksum_path"
+md5sum "$dir_temponym_files"/*.txt > "$checksum_path"
