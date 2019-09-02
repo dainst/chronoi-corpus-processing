@@ -49,3 +49,6 @@ for file in $(docker exec heideltime find /srv/output/005_separate_by_language/d
 do
     annotate "$file" "de" "german"
 done
+
+# output some basic statistics
+docker exec -it chronoi-pilot ./stats_basic.sh
