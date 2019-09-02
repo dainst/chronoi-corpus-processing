@@ -27,8 +27,10 @@ docker exec heideltime mkdir -p /srv/output/00X_annotated
 # the heideltime container
 annotate() {
     input_file="$1"
-    language="$2"
-    annotated_file="${annotated_folder}/$(basename -stxt $input_file)xml"
+    lang_short="$2"
+    language="$3"
+    annotated_file="${annotated_folder}/${lang_short}/$(basename -stxt $input_file)xml"
+    docker exec heideltime mkdir -p $(dirname "$annotated_file")
     if ! $(docker exec heideltime test -f "$annotated_file"); then
         docker exec heideltime /srv/app/scripts/temponym_annotate.sh "$language" 1970-01-01 "$input_file" "$annotated_file"
     else
@@ -39,11 +41,11 @@ annotate() {
 # process english input files
 for file in $(docker exec heideltime find /srv/output/005_separate_by_language/en -type f)
 do
-    annotate "$file" "english"
+    annotate "$file" "en" "english"
 done
 
 # process german input files
 for file in $(docker exec heideltime find /srv/output/005_separate_by_language/de -type f)
 do
-    annotate "$file" "german"
+    annotate "$file" "de" "german"
 done
