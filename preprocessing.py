@@ -19,10 +19,6 @@ if __name__ == "__main__":
     input_files.sort()
     for path in input_files:
 
-        # DONTCOMMIT
-        # if "07_" not in path:
-        #     continue
-
         scheme = FileScheme(path)
 
         scheme.add_step(1, "extracted_texts")
@@ -49,15 +45,18 @@ if __name__ == "__main__":
             os.makedirs(os.path.dirname(out_path), 0o777, True)
             scheme.write_file(out_path, content)
 
-        scheme.add_step(4, "de_hyphenate")
-        out_path = scheme.get_path_for_step(4)
-        if not scheme.file_exists(out_path):
+        # detect the document language
+        language_code = ""
+        if scheme.file_exists(scheme.get_path_for_step(3)):
             content = scheme.read_file(scheme.get_path_for_step(3))
-
             languages = {"en": "english", "de": "german"}
             langid.set_languages(languages.keys())
             language_code, _ = langid.classify(content)
 
+        scheme.add_step(4, "de_hyphenate")
+        out_path = scheme.get_path_for_step(4)
+        if not scheme.file_exists(out_path):
+            content = scheme.read_file(scheme.get_path_for_step(3))
             lines = content.splitlines()
             for i in range(0, len(lines) - 1):
                 l1, l2 = lines_remove_hyphens(lines[i], lines[i + 1], language_code)
@@ -68,3 +67,8 @@ if __name__ == "__main__":
             os.makedirs(os.path.dirname(out_path), 0o777, True)
             scheme.write_file(out_path, content)
 
+        scheme.add_step(5, "separate_by_language")
+        path_from_last_step = out_path
+        language_dir = os.path.join(scheme.get_dirname_for_step(5), language_code)
+        os.makedirs(language_dir, exist_ok=True)
+        shutil.copy(path_from_last_step, language_dir)

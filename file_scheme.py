@@ -30,19 +30,19 @@ class FileScheme:
     def __get_path_with_instruction_in_filename(self, directory: str, instruction: str, extension: str):
         return f"{directory}/{self.basename}-{instruction}.{extension}"
 
-    def __get_dirname_for_step(self, step_no: int):
+    def get_dirname_for_step(self, step_no: int):
         number_str = "%03d" % step_no
         folder_name = f"{number_str}_{self.steps[step_no]}"
         return os.path.join(self.output_dir, folder_name)
 
     def get_path_for_step(self, step_no: int) -> str:
-        return self.__get_path(self.__get_dirname_for_step(step_no), "txt")
+        return self.__get_path(self.get_dirname_for_step(step_no), "txt")
 
     def get_todo_path_for_step(self, step_no: int) -> str:
-        return self.__get_path_with_instruction_in_filename(self.__get_dirname_for_step(step_no), "TODO", "txt")
+        return self.__get_path_with_instruction_in_filename(self.get_dirname_for_step(step_no), "TODO", "txt")
 
     def get_done_path_for_step(self, step_no: int) -> str:
-        return self.__get_path_with_instruction_in_filename(self.__get_dirname_for_step(step_no), "DONE", "txt")
+        return self.__get_path_with_instruction_in_filename(self.get_dirname_for_step(step_no), "DONE", "txt")
 
     @staticmethod
     def read_file(path: str) -> str:
