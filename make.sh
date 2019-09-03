@@ -10,6 +10,10 @@
 #
 #    NOTE: Some manual steps are expected during preprocessing. 
 
+# These are the target folders filled with the annotated files
+folder_annotated=/srv/output/00X_annotated
+folder_manual_correction="/srv/output/0X0_manual_correction"
+
 # Preprocess the pdf files
 docker exec -it chronoi-pilot python3 preprocessing.py
 
@@ -20,7 +24,6 @@ docker exec -it chronoi-pilot python3 chronontology_export.py
 docker exec -it heideltime /srv/app/scripts/build_with_temponyms.sh /srv/output/heideltime_temponym_files
 
 # prepare an output directory for the annotated files
-annotated_folder=/srv/output/00X_annotated
 docker exec heideltime mkdir -p /srv/output/00X_annotated
 
 # check whether an annotated file exists and if it doesn't, create one using
@@ -29,7 +32,7 @@ annotate() {
     input_file="$1"
     lang_short="$2"
     language="$3"
-    annotated_file="${annotated_folder}/${lang_short}/$(basename -stxt $input_file)xml"
+    annotated_file="${folder_annotated}/${lang_short}/$(basename -stxt $input_file)xml"
     docker exec heideltime mkdir -p $(dirname "$annotated_file")
     if ! $(docker exec heideltime test -f "$annotated_file"); then
         docker exec heideltime /srv/app/scripts/temponym_annotate.sh "$language" 1970-01-01 "$input_file" "$annotated_file"
@@ -52,3 +55,11 @@ done
 
 # output some basic statistics
 docker exec -it chronoi-pilot ./stats_basic.sh
+
+# copy the annotated folder for manual annotation and copy the dtd in
+docker exec chronoi-pilot mkdir -p "$folder_manual_correction"
+docker exec chronoi-pilot cp -a "${folder_annotated}/." "${folder_manual_correction}/"
+docker exec chronoi-pilot cp resources/TimeML.dtd "$folder_manual_correction"
+
+# make this script's user to the owner of all resources produced here
+docker exec chronoi-pilot chown -R "${UID}:${UID}" /srv/output
