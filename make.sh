@@ -10,9 +10,10 @@
 #
 #    NOTE: Some manual steps are expected during preprocessing. 
 
-# These are the target folders filled with the annotated files
-folder_annotated=/srv/output/00X_annotated
-folder_manual_correction="/srv/output/0X0_manual_correction"
+# These are the source and target folders
+folder_annotated="/srv/output/A01_annotated"
+folder_manual_correction="/srv/output/A02_manual_correction"
+dir_input="/srv/output/006_separate_by_language"
 
 # Preprocess the pdf files
 docker exec -it chronoi-pilot python3 preprocessing.py
@@ -24,7 +25,7 @@ docker exec -it chronoi-pilot python3 chronontology_export.py
 docker exec -it heideltime /srv/app/scripts/build_with_temponyms.sh /srv/output/heideltime_temponym_files
 
 # prepare an output directory for the annotated files
-docker exec heideltime mkdir -p /srv/output/00X_annotated
+docker exec heideltime mkdir -p "$folder_annotated"
 
 # check whether an annotated file exists and if it doesn't, create one using
 # the heideltime container
@@ -35,6 +36,7 @@ annotate() {
     annotated_file="${folder_annotated}/${lang_short}/$(basename -stxt $input_file)xml"
     docker exec heideltime mkdir -p $(dirname "$annotated_file")
     if ! $(docker exec heideltime test -f "$annotated_file"); then
+        echo "Annotating (${language}): ${input_file}"
         docker exec heideltime /srv/app/scripts/temponym_annotate.sh "$language" 1970-01-01 "$input_file" "$annotated_file"
     else
         echo "Annotation already present: ${annotated_file}"
@@ -42,13 +44,13 @@ annotate() {
 }
 
 # process english input files
-for file in $(docker exec heideltime find /srv/output/005_separate_by_language/en -type f)
+for file in $(docker exec heideltime find "${dir_input}/en" -type f)
 do
     annotate "$file" "en" "english"
 done
 
 # process german input files
-for file in $(docker exec heideltime find /srv/output/005_separate_by_language/de -type f)
+for file in $(docker exec heideltime find "${dir_input}/de" -type f)
 do
     annotate "$file" "de" "german"
 done

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-text_dir=/srv/output/00X_annotated
+text_dir=/srv/output/A01_annotated
 dir_english="${text_dir}/en"
 dir_german="${text_dir}/de"
 
