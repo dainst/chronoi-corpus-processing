@@ -24,6 +24,9 @@ docker exec -it chronoi-pilot python3 chronontology_export.py
 # rebuild the heideltime jar if any of the temponym files changed
 docker exec -it heideltime /srv/app/scripts/build_with_temponyms.sh /srv/output/heideltime_temponym_files
 
+# translate the english corpus part
+docker exec -it chronoi-pilot ./translate_en_corpus.sh "$dir_input"
+
 # prepare an output directory for the annotated files
 docker exec heideltime mkdir -p "$folder_annotated"
 

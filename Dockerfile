@@ -14,7 +14,8 @@ RUN pip3 install nltk \
     chardet \
     pdfminer.six \
     hunspell \
-    PyICU
+    PyICU \
+    mkTranslation
 
 # download tokenization data for nltk
 RUN python3 -c "import nltk; nltk.download('punkt')"
