@@ -15,7 +15,9 @@ RUN pip3 install nltk \
     pdfminer.six \
     hunspell \
     PyICU \
-    mkTranslation
+    mkTranslation \
+    python-Levenshtein \
+    furl
 
 # download tokenization data for nltk
 RUN python3 -c "import nltk; nltk.download('punkt')"
