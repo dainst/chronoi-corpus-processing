@@ -1,5 +1,5 @@
 
-<!ELEMENT TimeML ( #PCDATA | TIMEX3 | TIMEX3INTERVAL )* >
+<!ELEMENT TimeML ( #PCDATA | TIMEX3 | TIMEX3INTERVAL | temponym-fn )* >
 
 <!ELEMENT TIMEX3 ( #PCDATA ) >
 <!ATTLIST TIMEX3 tid ID #REQUIRED >
@@ -25,5 +25,8 @@
 <!-- Added values for correction -->
 
 <!ATTLIST TIMEX3 check ( true-positive | false-positive | false-negative | false-normalized ) #REQUIRED >
-<!ATTLIST TIMEX3 corrects IDREF #IMPLIED >
-<!ATTLIST TIMEX3 textValue CDATA #IMPLIED >
+<!ATTLIST TIMEX3 exploration-time ( true ) #IMPLIED >
+<!ATTLIST TIMEX3 literature-time ( true ) #IMPLIED >
+
+<!ELEMENT temponym-fn ( #PCDATA ) >
+<!ATTLIST temponym-fn type ( period | people | dynasty | reign | person | birth | death | ancient-calendar | level | language ) #IMPLIED >
