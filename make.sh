@@ -28,7 +28,8 @@ docker exec -it heideltime /srv/app/scripts/build_with_temponyms.sh /srv/output/
 docker exec -it chronoi-pilot ./translate_en_corpus.sh "$dir_input"
 
 # translate corpus part (not fully working, an example for now)
-while read -r line; do python3 translate_temponym.py "$line"; done < /srv/output/heideltime_temponym_files/en_repattern.txt
+# mkdir -p /srv/output/temponym-translations
+# while read -r line; do python3 translate_temponym.py "$line"; done < /srv/output/heideltime_temponym_files/en_repattern.txt > /srv/output/temponym-translations/translate_en_idai_vocab.txt
 
 # prepare an output directory for the annotated files
 docker exec heideltime mkdir -p "$folder_annotated"

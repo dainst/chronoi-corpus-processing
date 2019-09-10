@@ -80,16 +80,17 @@ class IdaiVocab(object):
         return int(furl.furl(uri).args["arg"])
 
     @classmethod
-    def recursively_fetch_translations(cls, lang: str, start_id: int, previous=None):
-        if previous is None:
-            previous = []
-        results = cls.fetch_translations(lang, start_id)
-        for result in results:
-            if result not in previous:
+    def recursively_fetch_translations(cls, lang: str, start_id: int, max_depth=3, accu=None, depth=0):
+        if accu is None:
+            accu = []
+        if max_depth < 0 or depth < max_depth:
+            results = cls.fetch_translations(lang, start_id)
+            for result in results:
                 term_id, new_lang, _ = result
-                previous.append(result)
-                cls.recursively_fetch_translations(new_lang, term_id, previous)
-        return previous
+                if result not in accu:
+                    accu.append(result)
+                    cls.recursively_fetch_translations(new_lang, term_id, max_depth, accu, depth + 1)
+        return accu
 
 
 if __name__ == '__main__':
@@ -98,7 +99,7 @@ if __name__ == '__main__':
     parser.add_argument("temponym", type=str, help="The temponym to translate")
     parser.add_argument("-s", "--source-language", type=str, default="en",
                         help="The source language used for input as a two letter code.")
-    parser.add_argument("-l", "--max-levenshtein", type=int, default=5,
+    parser.add_argument("-l", "--max-levenshtein", type=int, default=4,
                         help="Maximum levenshtein distance to consider when querying for similar terms.")
     args = parser.parse_args()
 
@@ -116,7 +117,7 @@ if __name__ == '__main__':
     # at least once, query for that and get some ids of matching terms.
     details = IdaiVocab.fetch_matching(args.source_language, actual_term)
 
-    # for eacht of the details, retrieve all translations
+    # for each of the details, retrieve all translations
     translations = set()
     for id, _ in details:
         found = IdaiVocab.recursively_fetch_translations(args.source_language, id)
@@ -124,10 +125,9 @@ if __name__ == '__main__':
             translations.add((lang_code, term))
 
     # Get all the translations that are in the source language, put them in
-    # front and just output that list for now
+    # front, prepend the input, then output the complete list
     source_ts = [t for t in translations if t[0] == args.source_language]
     for t in source_ts:
         translations.remove(t)
-    output = source_ts + sorted(list(translations))
+    output = [(args.source_language, input_term)] + source_ts + sorted(list(translations))
     print(output)
-
