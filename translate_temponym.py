@@ -80,7 +80,7 @@ class IdaiVocab(object):
         return int(furl.furl(uri).args["arg"])
 
     @classmethod
-    def recursively_fetch_translations(cls, lang: str, start_id: int, max_depth=3, accu=None, depth=0):
+    def recursively_fetch_translations(cls, lang: str, start_id: int, max_depth=2, accu=None, depth=0):
         if accu is None:
             accu = []
         if max_depth < 0 or depth < max_depth:
