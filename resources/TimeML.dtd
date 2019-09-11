@@ -29,4 +29,4 @@
 <!ATTLIST TIMEX3 literature-time ( true ) #IMPLIED >
 
 <!ELEMENT temponym-fn ( #PCDATA ) >
-<!ATTLIST temponym-fn type ( period | people | dynasty | reign | person | birth | death | ancient-calendar | level | language ) #IMPLIED >
+<!ATTLIST temponym-fn type ( period | people | dynasty | reign | person | birth | death | ancient-calendar | level | language | incisive-event | culture ) #IMPLIED >
