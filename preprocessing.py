@@ -7,10 +7,10 @@ import os
 import re
 import shutil
 
-from file_scheme import FileScheme
-from text_extraction import PdfTextExtractor
-from cleaning import lines_remove_hyphens
-from tokenization import sentence_tokenizer
+from preprocessing.file_scheme import FileScheme
+from preprocessing.text_extraction import PdfTextExtractor
+from preprocessing.cleaning import lines_remove_hyphens
+from preprocessing.tokenization import sentence_tokenizer
 
 input_dir = "/srv/input"
 
