@@ -99,7 +99,7 @@ if __name__ == '__main__':
     parser.add_argument("temponym", type=str, help="The temponym to translate")
     parser.add_argument("-s", "--source-language", type=str, default="en",
                         help="The source language used for input as a two letter code.")
-    parser.add_argument("-l", "--max-levenshtein", type=int, default=4,
+    parser.add_argument("-l", "--max-levenshtein", type=int, default=3,
                         help="Maximum levenshtein distance to consider when querying for similar terms.")
     args = parser.parse_args()
 
