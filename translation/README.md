@@ -7,20 +7,30 @@ This is all very preliminary work without a fixed workflow, so some examples on 
 
 All the following commands were executed in the docker container, e.g. after a `docker exec chronoi-pilot -it bash`
 
-For the translation of the corpus:
+Translation of the corpus:
 
 ```bash
 ./translate_en_corpus.sh /srv/output/006_separate_by_language
 ```
 
-For the translation of temponyms by idai.vocab:
+Translation of temponyms by idai.vocab:
 
 ```bash
 mkdir -p /srv/output/temponym-translations
 while read -r line
 do
-    python3 translate_by_idai_vocab.py "$line"
+    python3 translation/translate_by_idai_vocab.py "$line"
 done < /srv/output/heideltime_temponym_files/en_repattern.txt > /srv/output/temponym-translations/translate_en_idai_vocab.txt
+```
+
+
+Translation of temponyms by dbpedia:
+
+```bash
+while read -r line
+do
+    python3 translation/translate_by_dbpedia.py "$line"
+done < /srv/output/heideltime_temponym_files/en_repattern.txt > /srv/output/temponym-translations/translate_en_dbpedia.txt
 ```
 
 For the translation of temponyms using google:
@@ -32,4 +42,12 @@ do
 done
 ```
 
+One-Liner to merge the google translation files and bring them in the same format as the other translation files (very slow, because of python startup, awk would be faster, but we need the good python escaping later):
 
+```bash
+paste -d '#' /srv/output/heideltime_temponym_files/en_repattern.txt /srv/output/heideltime_temponym_files/translate_* | \
+while read -r line
+do
+    python3 -c "import sys; line=sys.argv[1]; en, de, es, fr, it = line.split('#'); print([('en', en), ('de', de), ('es', es), ('fr', fr)])" "$line"
+done > /srv/output/temponym-translations/translate_en_google.txt
+```
