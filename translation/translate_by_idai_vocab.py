@@ -46,7 +46,7 @@ class IdaiVocab(object):
         if "string" in response:
             return response["string"]
         else:
-            print(f"WARN: Bad response when retrieving similar for'{term}'")
+            # print(f"WARN: Bad response when retrieving similar for'{term}'")
             return ""
 
     @classmethod
