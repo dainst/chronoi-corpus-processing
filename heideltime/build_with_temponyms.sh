@@ -34,7 +34,7 @@ cp_resource "${dir_temponym_files}/en_norm.txt" "english" "normalization" "norm"
 write_rule_if_not_exists() {
     local rule='RULENAME="temponym_chronontology_1",EXTRACTION="%reTemponymChronontology",NORM_VALUE="%normTemponymChronontology(group(1))"'
     local file=${1}
-    grep -q "temponym_chronontology_1" $file || echo "$rule" >> "$file"
+    grep -q "temponym_chronontology_1" "$file" || echo "$rule" >> "$file"
 }
 write_rule_if_not_exists "${dir_heideltime_app}/resources/english/rules/resources_rules_temponymrules.txt"
 write_rule_if_not_exists "${dir_heideltime_app}/resources/german/rules/resources_rules_temponymrules.txt"

@@ -42,12 +42,18 @@ do
 done
 ```
 
-One-Liner to merge the google translation files and bring them in the same format as the other translation files (very slow, because of python startup, awk would be faster, but we need the good python escaping later):
+One-Liner to merge the google translation files and bring them in the same format as the other translation files (slow, because of python startup, awk would be faster, but we need the python escaping later):
 
 ```bash
 paste -d '#' /srv/output/heideltime_temponym_files/en_repattern.txt /srv/output/heideltime_temponym_files/translate_* | \
 while read -r line
 do
-    python3 -c "import sys; line=sys.argv[1]; en, de, es, fr, it = line.split('#'); print([('en', en), ('de', de), ('es', es), ('fr', fr)])" "$line"
+    python3 -c "import sys; line=sys.argv[1]; en, de, es, fr, it = line.split('#'); print([('en', en), ('de', de), ('es', es), ('fr', fr), ('it', it)])" "$line"
 done > /srv/output/temponym-translations/translate_en_google.txt
+```
+
+To merge the translations of temponyms into an overview .csv-File and at the same time create the heideltime pattern and normalization files for the automatic translations:
+
+```bash
+python3 translation/merge_temponym_translations.py
 ```
