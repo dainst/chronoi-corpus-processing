@@ -59,9 +59,9 @@ done
 docker exec -it chronoi-pilot ./stats_basic.sh
 
 # copy the annotated folder for manual annotation and copy the dtd in
-docker exec chronoi-pilot mkdir -p "$folder_manual_correction"
-docker exec chronoi-pilot cp -a "${folder_annotated}/." "${folder_manual_correction}/"
-docker exec chronoi-pilot cp resources/TimeML.dtd "$folder_manual_correction"
+# docker exec chronoi-pilot mkdir -p "$folder_manual_correction"
+# docker exec chronoi-pilot cp -a "${folder_annotated}/." "${folder_manual_correction}/"
+# docker exec chronoi-pilot cp resources/TimeML.dtd "$folder_manual_correction"
 
 # make this script's user to the owner of all resources produced here
 docker exec chronoi-pilot chown -R "${UID}:${UID}" /srv/output

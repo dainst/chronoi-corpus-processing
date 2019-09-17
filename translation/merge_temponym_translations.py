@@ -84,7 +84,7 @@ with open(input_normalization_file, "r") as norm_file:
     for row in norm_reader:
         normalization_spans.append(row[1])
 
-if (len(normalization_spans) != len(result_columns[0])):
+if len(normalization_spans) != len(result_columns[0]):
     print("ERROR: Count of normalizations and translations does not match.")
     exit(1)
 
@@ -105,8 +105,9 @@ for lang, paths in output_heideltime_files.items():
             label_to_use = f"{lang}-{preferred_label}"
             label_x_pos = result_headers.index(label_to_use)
             candidate = row[label_x_pos]
-            if (candidate.strip() != ""):
-                translation = candidate
+            if candidate.strip() != "":
+                # if multiple candidates are given by the translation only take the first
+                translation = candidate.split("||")[0]
                 # preferred translation is found so do not test any others
                 break
 
@@ -114,7 +115,7 @@ for lang, paths in output_heideltime_files.items():
         repattern_lines.append(translation + "\n")
 
         # Write the translation and the normalization to the norm file
-        normalization_output = '"%s","%s"\n' % (translation, normalization_spans[i])
+        normalization_output = '"%s","%s"\n' % (translation, normalization_spans[idx])
         norm_lines.append(normalization_output)
 
     # actually write the files
