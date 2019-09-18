@@ -1,24 +1,24 @@
 #!/bin/bash
 
 text_dir=/srv/output/A01_annotated
-dir_english="${text_dir}/en"
-dir_german="${text_dir}/de"
 
-echo "Temponyms per file, english:"
-grep -Iric 'type="TEMPONYM"' "$dir_english"
+for lang_dir in en de fr-auto it-auto es-auto
+do
+    lang_dir_path="${text_dir}/${lang_dir}"
 
-echo "Temponyms per file, german:"
-grep -Iric 'type="TEMPONYM"' "$dir_german"
+    echo "Temponyms per file, ${lang_dir}:"
+    grep -Iric 'type="TEMPONYM"' "$lang_dir_path"
 
-echo "Temponym counts, english:"
-grep -Inrio 'type="TEMPONYM"[^>]*[^<]*' "$dir_english" | grep -o '[^>]*$' | sort | uniq -c | sort -nr
+    echo "Temponym counts, ${lang_dir}:"
+    grep -Inrio 'type="TEMPONYM"[^>]*[^<]*' "$lang_dir_path" | grep -o '[^>]*$' | sort | uniq -c | sort -nr
+done
 
-echo "Temponym counts, german:"
-grep -Inrio 'type="TEMPONYM"[^>]*[^<]*' "$dir_german" | grep -o '[^>]*$' | sort | uniq -c | sort -nr
+for lang_dir in en de fr-auto it-auto es-auto
+do
+    lang_dir_path="${text_dir}/${lang_dir}"
 
-total_english=$(grep -Iri 'type="TEMPONYM"' "$dir_english" | wc -l)
-total_german=$(grep -Iri 'type="TEMPONYM"' "$dir_german" | wc -l)
-unique_english=$(grep -Inrio 'type="TEMPONYM"[^>]*[^<]*' "$dir_english" | grep -o '[^>]*$' | sort | uniq | wc -l)
-unique_german=$(grep -Inrio 'type="TEMPONYM"[^>]*[^<]*' "$dir_german" | grep -o '[^>]*$' | sort | uniq | wc -l)
-echo "english: ${total_english} total, ${unique_english} unique"
-echo "german: ${total_german} total, ${unique_german} unique"
+    total_count=$(grep -Iri 'type="TEMPONYM"' "$lang_dir_path" | wc -l)
+    unique_count=$(grep -Inrio 'type="TEMPONYM"[^>]*[^<]*' "$lang_dir_path" | grep -o '[^>]*$' | sort | uniq | wc -l)
+
+    echo "${lang_dir}: ${total_count} total, ${unique_count} unique"
+done

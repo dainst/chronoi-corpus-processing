@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script orchestrates all steps taken to produce the corpus results
 # in the docker containers setup for the pilot corpus.
@@ -30,10 +30,10 @@ docker exec heideltime mkdir -p "$folder_annotated"
 # check whether an annotated file exists and if it doesn't, create one using
 # the heideltime container
 annotate() {
-    input_file="$1"
-    lang_short="$2"
-    language="$3"
-    annotated_file="${folder_annotated}/${lang_short}/$(basename -stxt $input_file)xml"
+    local input_file="$1"
+    local dir_language="$2"
+    local language="$3"
+    local annotated_file="${folder_annotated}/${dir_language}/$(basename -stxt $input_file)xml"
     docker exec heideltime mkdir -p $(dirname "$annotated_file")
     if ! $(docker exec heideltime test -f "$annotated_file"); then
         echo "Annotating (${language}): ${input_file}"
@@ -43,17 +43,26 @@ annotate() {
     fi
 }
 
-# process english input files
-for file in $(docker exec heideltime find "${dir_input}/en" -type f)
-do
-    annotate "$file" "en" "english"
-done
+# find all files in the directory $1/$2 and hand them to the
+# annotate() function together with the language code
+find_and_annotate() {
+    local dir_input="$1"
+    local dir_language="$2"
+    local language_name="$3"
+    for file in $(docker exec heideltime find "${dir_input}/${dir_language}" -type f)
+    do
+        annotate "$file" "$dir_language" "$language_name"
+    done
+}
 
-# process german input files
-for file in $(docker exec heideltime find "${dir_input}/de" -type f)
-do
-    annotate "$file" "de" "german"
-done
+# annotate english and german input files
+find_and_annotate "$dir_input" "en" "english"
+find_and_annotate "$dir_input" "de" "german"
+
+# annotate the automatically translated files
+find_and_annotate "$dir_input" "fr-auto" "french"
+find_and_annotate "$dir_input" "it-auto" "italian"
+find_and_annotate "$dir_input" "es-auto" "spanish"
 
 # output some basic statistics
 docker exec -it chronoi-pilot ./stats_basic.sh
