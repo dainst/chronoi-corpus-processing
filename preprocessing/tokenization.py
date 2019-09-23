@@ -11,7 +11,7 @@ abbreviations = [
     "anc", "berl", "sitzungsber", "epigr", "diz", "chr", "add", "art", "ivn", "nob", \
     # from english texts
     "i.e", "tac", "ann", "suet", "al", "ed", "nos", "no", "ch", "chs", "cf", \
-    "e.g", "sp", "spp", "suppl", "etal", "cm", "fig", "figs"
+    "e.g", "sp", "spp", "suppl", "etal", "cm", "fig", "figs", "vol"
 ]
 
 # to not split sentences on "19. Jahrhundert" etc.
