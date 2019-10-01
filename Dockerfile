@@ -18,7 +18,9 @@ RUN pip3 install nltk \
     mkTranslation \
     python-Levenshtein \
     furl \
-    SPARQLWrapper
+    SPARQLWrapper \
+    beautifulsoup4 \
+    lxml
 
 # download tokenization data for nltk
 RUN python3 -c "import nltk; nltk.download('punkt')"
