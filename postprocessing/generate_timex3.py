@@ -104,22 +104,29 @@ def cleanup_document(doc: bs4.BeautifulSoup) -> bs4.BeautifulSoup:
     wrap_contents_in_new_tag(timeml_root, "TEXT")
     add_fake_dct_tag(timeml_root)
 
-
     return doc
+
+
+def trim_whitespace_at_start_of_each_line(text: str):
+    return "".join(map(str.lstrip, text.splitlines(keepends=True)))
 
 
 def handle_cleanup(input_path, output_path):
     # read the original
     with open(input_path, "r") as input_file:
-        doc = bs4.BeautifulSoup(input_file, "lxml-xml")
+        doc = bs4.BeautifulSoup(input_file, "lxml-xml", from_encoding="utf-8")
 
-    # do the cleanup
+    # do the cleanup and convert to a utf-8 string
     doc = cleanup_document(doc)
+    xml_str = str(doc)
+
+    # do some cleanup on the string itself
+    xml_str = trim_whitespace_at_start_of_each_line(xml_str)
 
     # write the new file
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as output_file:
-        output_file.write(str(doc))
+        output_file.write(xml_str)
 
 
 if __name__ == "__main__":
