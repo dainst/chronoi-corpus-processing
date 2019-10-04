@@ -10,6 +10,9 @@
 #
 #    NOTE: Some manual steps are expected during preprocessing. 
 
+# make the utility funcitons available
+source "$(dirname $0)/util.sh"
+
 # These are the source and target folders
 folder_annotated="/srv/output/A01_annotated"
 folder_manual_correction="/srv/output/A02_manual_correction"
@@ -27,45 +30,17 @@ docker exec -it heideltime /srv/app/scripts/build_with_temponyms.sh /srv/output/
 # prepare an output directory for the annotated files
 docker exec heideltime mkdir -p "$folder_annotated"
 
-# check whether an annotated file exists and if it doesn't, create one using
-# the heideltime container
-annotate() {
-    local input_file="$1"
-    local dir_language="$2"
-    local language="$3"
-    local annotated_file="${folder_annotated}/${dir_language}/$(basename -stxt $input_file)xml"
-    docker exec heideltime mkdir -p $(dirname "$annotated_file")
-    if ! $(docker exec heideltime test -f "$annotated_file"); then
-        echo "Annotating (${language}): ${input_file}"
-        docker exec heideltime /srv/app/scripts/temponym_annotate.sh "$language" 1970-01-01 "$input_file" "$annotated_file"
-    else
-        echo "Annotation already present: ${annotated_file}"
-    fi
-}
-
-# find all files in the directory $1/$2 and hand them to the
-# annotate() function together with the language code
-find_and_annotate() {
-    local dir_input="$1"
-    local dir_language="$2"
-    local language_name="$3"
-    for file in $(docker exec heideltime find "${dir_input}/${dir_language}" -type f)
-    do
-        annotate "$file" "$dir_language" "$language_name"
-    done
-}
-
 # annotate english and german input files
-find_and_annotate "$dir_input" "en" "english"
-find_and_annotate "$dir_input" "de" "german"
+find_and_annotate "$dir_input" "en" "english" "1970-01-01" "scientific"
+find_and_annotate "$dir_input" "de" "german" "1970-01-01" "scientific"
 
 # annotate the automatically translated files
-find_and_annotate "$dir_input" "fr-auto" "french"
-find_and_annotate "$dir_input" "it-auto" "italian"
-find_and_annotate "$dir_input" "es-auto" "spanish"
+find_and_annotate "$dir_input" "fr-auto" "french" "1970-01-01" "scientific"
+find_and_annotate "$dir_input" "it-auto" "italian" "1970-01-01" "scientific"
+find_and_annotate "$dir_input" "es-auto" "spanish" "1970-01-01" "scientific"
 
 # output some basic statistics
-docker exec -it chronoi-pilot ./stats_basic.sh
+docker exec -it chronoi-pilot ./postprocessing/stats_basic.sh
 
 # copy the annotated folder for manual annotation and copy the dtd in
 # docker exec chronoi-pilot mkdir -p "$folder_manual_correction"

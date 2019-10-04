@@ -6,7 +6,9 @@
 
 language="${1}"
 dct="${2}"
-input_file="${3}"
-output_file="${4}"
+text_type="${3}"
+input_file="${4}"
+output_file="${5}"
 
-heideltime -l "$language" -it -t scientific -dct "$dct" "$input_file" > "$output_file"
+set -x
+heideltime -l "$language" -it -t "$text_type" -dct "$dct" "$input_file" > "$output_file"
