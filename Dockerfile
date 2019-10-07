@@ -28,9 +28,10 @@ RUN python3 -c "import nltk; nltk.download('punkt')"
 # copy hunspell dictionaries in place
 COPY resources/de_DE.aff resources/de_DE.dic /usr/share/hunspell/
 
-# create the log file if it doesn't exist, use ENV as it is available in CMD
+# create the log file if it doesn't exist
 ARG log_file=/var/log/chronoi-pilot.log
 RUN touch ${log_file}
+# use ENV to have ${LOG} avalilable in the CMD-line below
 ENV LOG=${log_file}
 
 # prepare directories to be mounted externally

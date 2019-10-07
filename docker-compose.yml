@@ -19,3 +19,10 @@ services:
     volumes:
       - ./heideltime:/srv/app/scripts:rw
       - ${OUTPUT_DIR}:/srv/output:rw
+
+  tempeval3:
+    build: ./tempeval3
+    container_name: tempeval3
+    image: tempeval3
+    volumes:
+      - ${OUTPUT_DIR}:/srv/output:rw
