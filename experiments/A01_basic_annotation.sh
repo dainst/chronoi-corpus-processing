@@ -16,7 +16,7 @@ source "$(dirname $0)/util.sh"
 # These are the source and target folders
 folder_annotated="/srv/output/A01_annotated"
 folder_manual_correction="/srv/output/A02_manual_correction"
-dir_input="/srv/output/006_separate_by_language"
+dir_input="/srv/output/007_separate_by_language"
 
 # Preprocess the pdf files
 docker exec -it chronoi-pilot python3 preprocessing.py
@@ -31,13 +31,13 @@ docker exec -it heideltime /srv/app/scripts/build_with_temponyms.sh /srv/output/
 docker exec heideltime mkdir -p "$folder_annotated"
 
 # annotate english and german input files
-find_and_annotate "$dir_input" "en" "english" "1970-01-01" "scientific"
-find_and_annotate "$dir_input" "de" "german" "1970-01-01" "scientific"
+find_and_annotate "$dir_input" "en" "english" "1970-01-01" "scientific" "$folder_annotated"
+find_and_annotate "$dir_input" "de" "german" "1970-01-01" "scientific" "$folder_annotated"
 
 # annotate the automatically translated files
-find_and_annotate "$dir_input" "fr-auto" "french" "1970-01-01" "scientific"
-find_and_annotate "$dir_input" "it-auto" "italian" "1970-01-01" "scientific"
-find_and_annotate "$dir_input" "es-auto" "spanish" "1970-01-01" "scientific"
+find_and_annotate "$dir_input" "fr-auto" "french" "1970-01-01" "scientific" "$folder_annotated"
+find_and_annotate "$dir_input" "it-auto" "italian" "1970-01-01" "scientific" "$folder_annotated"
+find_and_annotate "$dir_input" "es-auto" "spanish" "1970-01-01" "scientific" "$folder_annotated"
 
 # output some basic statistics
 docker exec -it chronoi-pilot ./postprocessing/stats_basic.sh
@@ -47,5 +47,4 @@ docker exec -it chronoi-pilot ./postprocessing/stats_basic.sh
 # docker exec chronoi-pilot cp -a "${folder_annotated}/." "${folder_manual_correction}/"
 # docker exec chronoi-pilot cp resources/TimeML.dtd "$folder_manual_correction"
 
-# make this script's user to the owner of all resources produced here
-docker exec chronoi-pilot chown -R "${UID}:${UID}" /srv/output
+correct_output_files_ownership

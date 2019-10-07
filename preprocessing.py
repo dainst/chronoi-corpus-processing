@@ -6,6 +6,7 @@ import langid
 import os
 import re
 import shutil
+import xml.sax.saxutils
 
 from preprocessing.file_scheme import FileScheme
 from preprocessing.text_extraction import PdfTextExtractor
@@ -84,7 +85,15 @@ if __name__ == "__main__":
             os.makedirs(os.path.dirname((out_path)), exist_ok=True)
             scheme.write_file(out_path, new_content)
 
-        scheme.add_step(6, "separate_by_language")
+        scheme.add_step(6, "escape_xml_chars")
+        out_path = scheme.get_path_for_step(6)
+        if not scheme.file_exists(out_path):
+            content = scheme.read_file(scheme.get_path_for_step(5))
+            new_content = xml.sax.saxutils.escape(content)
+            os.makedirs(os.path.dirname((out_path)), exist_ok=True)
+            scheme.write_file(out_path, new_content)
+
+        scheme.add_step(7, "separate_by_language")
         path_from_last_step = out_path
         language_dir = os.path.join(scheme.get_dirname_for_step(6), language_code)
         os.makedirs(language_dir, exist_ok=True)

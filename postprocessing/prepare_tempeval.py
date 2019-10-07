@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import argparse
 import bs4
 import os
 import glob
@@ -130,27 +131,29 @@ def handle_cleanup(input_path, output_path):
 
 
 if __name__ == "__main__":
-    # the output dir for the whole application (also has inputs for this)
+
+    parser = argparse.ArgumentParser(
+        description="Prepare two annotation directories for evaluation by the tempeval scripts.")
+    parser.add_argument("system_annotation_dir", type=str, help="The directory with system annotation files.")
+    parser.add_argument("target_dir", type=str,
+                        help="A directory to put the prepared (bronze)-standard and system files into.")
+    args = parser.parse_args()
+
+    # the general output dir for the whole application
     dir_output = os.environ["OUTPUT_DIR"]
 
-    # handle the manually corrected files serving as the de-facto gold-standard
+    # handle the manually corrected files serving as the de-facto "gold"-standard
     dir_annotated = os.path.join(dir_output, "A02_manual_correction", "en")
-    dir_timex3 = os.path.join(dir_output, "A03_test_evaluation", "bronze", "en")
+    dir_out_bronze = os.path.join(args.target_dir, "bronze")
     files = glob.glob(os.path.join(dir_annotated, "**_DONE.xml"))
     for file_path in files:
-        new_path = os.path.join(dir_timex3, os.path.basename(file_path))
+        new_path = os.path.join(dir_out_bronze, os.path.basename(file_path))
         new_path = new_path.replace("_DONE", "")
         handle_cleanup(file_path, new_path)
 
     # input and output dirs for the system annotation
-    dir_annotated = os.path.join(dir_output, "A01_annotated", "en")
-    dir_system = os.path.join(dir_output, "A03_test_evaluation", "system", "en")
-    files = glob.glob(os.path.join(dir_annotated, "**.xml"))
-
+    dir_out_system = os.path.join(args.target_dir, "system")
+    files = glob.glob(os.path.join(args.system_annotation_dir, "**.xml"))
     for file_path in files:
-        # ignore that one file we never got around to correctly annotate
-        if "09_Ber" in file_path:
-            continue
-
-        new_path = os.path.join(dir_system, os.path.basename(file_path))
+        new_path = os.path.join(dir_out_system, os.path.basename(file_path))
         handle_cleanup(file_path, new_path)

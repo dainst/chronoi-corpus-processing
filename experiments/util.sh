@@ -9,7 +9,8 @@ annotate() {
     local language="$3"
     local dct="$4"
     local text_type="$5"
-    local annotated_file="${folder_annotated}/${dir_language}/$(basename -stxt $input_file)xml"
+    local target_folder="$6"
+    local annotated_file="${target_folder}/${dir_language}/$(basename -stxt $input_file)xml"
 
     docker exec heideltime mkdir -p $(dirname "$annotated_file")
     if ! $(docker exec heideltime test -f "$annotated_file"); then
@@ -28,9 +29,18 @@ find_and_annotate() {
     local language_name="$3"
     local dct="$4"
     local text_type="$5"
-    
+    local target_folder="$6"    
+
     for file in $(docker exec heideltime find "${dir_input}/${dir_language}" -type f)
     do
-        annotate "$file" "$dir_language" "$language_name" "$dct" "$text_type"
+        annotate "$file" "$dir_language" "$language_name" "$dct" "$text_type" "$target_folder"
     done
+}
+
+
+# Make this script's user to the owner of all resources in the docker containers
+# output directory to make them accessible to the user who is runnging this.
+# Normally these files are created by the docker containers root user.
+correct_output_files_ownership() {
+    docker exec chronoi-pilot chown -R "${UID}:${UID}" /srv/output
 }
