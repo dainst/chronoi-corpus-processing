@@ -35,6 +35,8 @@ class Result:
 
 class TaskEvaluation:
 
+    NAN = float('nan')
+
     def __init__(self, task_type: TaskType, results=None):
         self.types_to_results = {}
         self.task_type = task_type
@@ -42,17 +44,47 @@ class TaskEvaluation:
         if results:
             self.add_results(results)
 
-    @staticmethod
-    def _precision(tp: int, fp: int):
-        return tp / (tp + fp)
+    @property
+    def tp(self) -> int:
+        return self.no_of_results(ResultType.TP)
 
-    @staticmethod
-    def _recall(tp: int, fn: int):
-        return tp / (tp + fn)
+    @property
+    def fp(self) -> int:
+        return self.no_of_results(ResultType.FP)
 
-    @staticmethod
-    def _fn_score(precision: float, recall: float, weight: float = 1.0):
-        return ((1 + weight ** 2) * precision * recall) / (weight ** 2 * precision + recall)
+    @property
+    def fn(self) -> int:
+        return self.no_of_results(ResultType.FN)
+
+    @property
+    def max_matches(self) -> int:
+        return self.no_of_results(ResultType.ATTR_MATCH_POSSIBLE)
+
+    @property
+    def precision(self) -> float:
+        if self.tp == 0 and self.fp == 0:
+            return self.NAN
+        return self.tp / (self.tp + self.fp)
+
+    @property
+    def recall(self) -> float:
+        if self.tp == 0 and self.fn == 0:
+            return self.NAN
+        return self.tp / (self.tp + self.fn)
+
+    @property
+    def f1_score(self) -> float:
+        return self.fn_score(1.0)
+
+    def fn_score(self, weight: float = 1.0) -> float:
+        p, r = (self.precision, self.recall)
+        return ((1 + weight ** 2) * p * r) / (weight ** 2 * p + r)
+
+    @property
+    def accuracy(self):
+        if self.max_matches == 0:
+            return self.NAN
+        return self.tp / self.max_matches
 
     @staticmethod
     def _add_to_dict_list(result_dict: dict, key, result):
@@ -67,38 +99,11 @@ class TaskEvaluation:
         for result in results:
             self.add_result(result)
 
-    @staticmethod
-    def _tab_print(name: str, value):
-        template = "%20s: "
-        template += "%8d" if type(value) == int else "%8.5f"
-        print(template % (name, value))
+    def no_of_results(self, result_type: ResultType) -> int:
+        return len(self.get_results(result_type))
 
-    def print_evaluation(self, task_name):
-        tp = len(self.types_to_results.get(ResultType.TP, []))
-        fp = len(self.types_to_results.get(ResultType.FP, []))
-        fn = len(self.types_to_results.get(ResultType.FN, []))
-        precision = self._precision(tp=tp, fp=fp)
-        recall = self._recall(tp=tp, fn=fn)
-        f1 = self._fn_score(precision, recall, 1.0)
-
-        infos = [
-            ("TP", tp),
-            ("FP", fp),
-            ("FN", fn),
-            ("precision", precision),
-            ("recall", recall),
-            ("F1", f1)
-        ]
-
-        if self.task_type == TaskType.ATTRIBUTE:
-            max_matches = len(self.types_to_results.get(ResultType.ATTR_MATCH_POSSIBLE, []))
-            accuracy = tp / max_matches
-            infos.append(("max_matches", max_matches))
-            infos.append(("accuracy", accuracy))
-
-        print(f"~~~~TASK: {task_name}~~~~")
-        for (k, v) in infos:
-            self._tab_print(k, v)
+    def get_results(self, result_type: ResultType) -> [Result]:
+        return self.types_to_results.get(result_type, [])
 
 
 class Comparator:
@@ -250,6 +255,34 @@ class TagInContext:
         return bool(set(self._span).intersection(set(other._span)))
 
 
+class PrintUtil:
+
+    @staticmethod
+    def _tab_print(name: str, value):
+        template = "%20s: "
+        template += "%8d" if type(value) == int else "%8.5f"
+        print(template % (name, value))
+
+    @classmethod
+    def print_evaluation(cls, evaluation: TaskEvaluation, task_name: str):
+        infos = [
+            ("TP", evaluation.tp),
+            ("FP", evaluation.fp),
+            ("FN", evaluation.fn),
+            ("precision", evaluation.precision),
+            ("recall", evaluation.recall),
+            ("F1", evaluation.f1_score)
+        ]
+
+        if evaluation.task_type == TaskType.ATTRIBUTE:
+            infos.append(("max_matches", evaluation.max_matches))
+            infos.append(("accuracy", evaluation.accuracy))
+
+        print(f"~~~~{task_name}~~~~")
+        for (k, v) in infos:
+            cls._tab_print(k, v)
+
+
 def process_files(gold_file: str, system_file: str, basename: str) -> [Result]:
     gold_doc = Document(path=gold_file, basename=basename)
     system_doc = Document(path=system_file, basename=basename)
@@ -290,16 +323,16 @@ def main(args):
 
     relaxed_results = filter(lambda r: r.task_type == TaskType.TAG_RELAXED, results)
     evaluation = TaskEvaluation(TaskType.TAG_RELAXED, relaxed_results)
-    evaluation.print_evaluation("RELAXED TAG")
+    PrintUtil.print_evaluation(evaluation, "RELAXED TAG")
 
     strict_results = filter(lambda r: r.task_type == TaskType.TAG_STRICT, results)
     evaluation = TaskEvaluation(TaskType.TAG_STRICT, strict_results)
-    evaluation.print_evaluation("STRICT TAG")
+    PrintUtil.print_evaluation(evaluation, "STRICT TAG")
 
     for attr in ["type", "value"]:
         rs = filter(lambda r: r.task_type == TaskType.ATTRIBUTE and r.attr_name == attr, results)
         evaluation = TaskEvaluation(TaskType.ATTRIBUTE, rs)
-        evaluation.print_evaluation("ATTR MATCHING: " + attr)
+        PrintUtil.print_evaluation(evaluation, f"ATTR MATCHING: \"{attr}\"")
 
 
 if __name__ == '__main__':
