@@ -1,10 +1,12 @@
 #!/bin/bash
 
+dir_bronze="/srv/output/A02_manual_correction/"
 dir_system="/srv/output/A01_annotated"
 dir_eval=/srv/output/A03_test_evaluation
 
 # Prepare the xml files from A01 for evaluation.
-docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py "${dir_system}/en" "$dir_eval"
+docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py "${dir_bronze}/en/*_DONE.xml" "${dir_eval}/bronze"
+docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py "${dir_system}/en/*.xml" "${dir_eval}/system"
 
 # Remove the file that is not present as an annotation correction
 docker exec -it chronoi-pilot rm "${dir_eval}/system/09_Bermann1997.xml"

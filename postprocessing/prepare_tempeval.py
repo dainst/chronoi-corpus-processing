@@ -8,14 +8,28 @@ import glob
 import re
 
 
-def tag_should_be_removed(elem: bs4.Tag) -> bool:
-    if elem.name in ["temponym-fn", "TIMEX3INTERVAL"]:
-        return True
-    elif elem.name == "TIMEX3":
-        return (elem.attrs.get("check", "") == "false-positive"
-                or elem.attrs.get("type", "") == "TEMPONYM")
-    else:
-        print("WARN: Non-standard element: " + str(elem))
+class Config:
+
+    def __init__(self):
+        self.remove_tags = [
+            {"tag": "temponym-fn"},
+            {"tag": "TIMEX3", "attrs": {"check": "false-positive"}}
+        ]
+        self.lstrip_lines = True
+        self.add_fake_dct = True
+
+
+def tag_matches_definition(elem: bs4.Tag, tag_def: dict) -> bool:
+    result = False
+
+    if elem.name == tag_def.get("tag"):
+        result = True
+        # if an attribute does not match,
+        attrs = tag_def.get("attrs", {})
+        for (k, v) in attrs.items():
+            if elem.attrs.get(k, "") != v:
+                result = False
+    return result
 
 
 def correct_tid_attr_if_needed(elem) -> None:
@@ -44,7 +58,7 @@ def correct_value_attr_if_needed(elem) -> None:
         elem.attrs["value"] = match[1]
 
 
-def recursively_cleanup_element(elem: bs4.Tag) -> None:
+def recursively_cleanup_element(elem: bs4.Tag, config: Config) -> None:
     if type(elem) == bs4.NavigableString:
         # text nodes are ignored
         return
@@ -53,11 +67,13 @@ def recursively_cleanup_element(elem: bs4.Tag) -> None:
     # lower nodes are done first and do not cause trouble when
     # changing higher nodes later
     for child_elem in elem.children:
-        recursively_cleanup_element(child_elem)
+        recursively_cleanup_element(child_elem, config)
 
-    # remove tags that should not be included in the output
-    if tag_should_be_removed(elem):
-        elem.unwrap()
+    # remove attributes if they fit one of the removal definitions
+    for definition in config.remove_tags:
+        if tag_matches_definition(elem, definition):
+            elem.unwrap()
+            break
 
     # handle attributes (should only be in TIMEX3s)
     correct_tid_attr_if_needed(elem)
@@ -89,12 +105,12 @@ def wrap_contents_in_new_tag(elem: bs4.Tag, tag_name: str) -> bs4.Tag:
     return elem
 
 
-def cleanup_document(doc: bs4.BeautifulSoup) -> bs4.BeautifulSoup:
+def cleanup_document(doc: bs4.BeautifulSoup, config: Config) -> bs4.BeautifulSoup:
     # cleanup the main document tags
     timeml_root = doc.findChild("TimeML")
     for child in timeml_root.children:
         if type(child) == bs4.Tag:
-            recursively_cleanup_element(child)
+            recursively_cleanup_element(child, config)
 
     # work on the header-like elements adding valid namespace info and removing
     # the doctype if there is one
@@ -103,7 +119,9 @@ def cleanup_document(doc: bs4.BeautifulSoup) -> bs4.BeautifulSoup:
         doctype_tag.extract()
     # add_timeml_namespace_info(timeml_root)
     wrap_contents_in_new_tag(timeml_root, "TEXT")
-    add_fake_dct_tag(timeml_root)
+
+    if config.add_fake_dct:
+        add_fake_dct_tag(timeml_root)
 
     return doc
 
@@ -112,48 +130,54 @@ def trim_whitespace_at_start_of_each_line(text: str):
     return "".join(map(str.lstrip, text.splitlines(keepends=True)))
 
 
-def handle_cleanup(input_path, output_path):
+def handle_cleanup(input_path: str, output_path: str, config: Config):
     # read the original
     with open(input_path, "r") as input_file:
         doc = bs4.BeautifulSoup(input_file, "lxml-xml", from_encoding="utf-8")
 
     # do the cleanup and convert to a utf-8 string
-    doc = cleanup_document(doc)
+    doc = cleanup_document(doc, config)
     xml_str = str(doc)
 
     # do some cleanup on the string itself
-    xml_str = trim_whitespace_at_start_of_each_line(xml_str)
+    if config.lstrip_lines:
+        xml_str = trim_whitespace_at_start_of_each_line(xml_str)
 
     # write the new file
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as output_file:
         output_file.write(xml_str)
+
+
+def build_config(args) -> Config:
+    config = Config()
+    if not args.keep_intervals:
+        config.remove_tags.append({"tag": "TIMEX3INTERVAL"})
+    if not args.keep_temponyms:
+        config.remove_tags.append({"tag": "TIMEX3", "attrs": {"type": "TEMPONYM"}})
+    config.lstrip_lines = not args.no_lstrip_lines
+    config.add_fake_dct = not args.no_fake_dct
+    return config
+
+
+def main(args):
+    config = build_config(args)
+
+    os.makedirs(args.output_dir, exist_ok=True)
+    for path in glob.glob(args.input_path):
+        new_path = os.path.join(args.output_dir, os.path.basename(path))
+        new_path = new_path.replace("_DONE", "")
+        handle_cleanup(path, new_path, config)
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        description="Prepare two annotation directories for evaluation by the tempeval scripts.")
-    parser.add_argument("system_annotation_dir", type=str, help="The directory with system annotation files.")
-    parser.add_argument("target_dir", type=str,
-                        help="A directory to put the prepared (bronze)-standard and system files into.")
-    args = parser.parse_args()
+        description="Prepare a directory of files for evaluation by the tempeval scripts.")
+    parser.add_argument("input_path", type=str, help="A glob expression used for searching input files, e.g.: '../data/*.xml'")
+    parser.add_argument("output_dir", type=str, help="A directory to put the prepared files into. Will be created if needed.")
+    parser.add_argument("--keep-intervals", action="store_true", help="If present, TIMEX3INTERVAL tags are not removed")
+    parser.add_argument("--keep-temponyms", action="store_true", help="If present, TIMEX3 with TEMPONYM are not removed")
+    parser.add_argument("--no-lstrip-lines", action="store_true", help="If present, do not clean whitespace starting each line.")
+    parser.add_argument("--no-fake-dct", action="store_true", help="If present, do not add a fake DCT tag.")
 
-    # the general output dir for the whole application
-    dir_output = os.environ["OUTPUT_DIR"]
-
-    # handle the manually corrected files serving as the de-facto "gold"-standard
-    dir_annotated = os.path.join(dir_output, "A02_manual_correction", "en")
-    dir_out_bronze = os.path.join(args.target_dir, "bronze")
-    files = glob.glob(os.path.join(dir_annotated, "**_DONE.xml"))
-    for file_path in files:
-        new_path = os.path.join(dir_out_bronze, os.path.basename(file_path))
-        new_path = new_path.replace("_DONE", "")
-        handle_cleanup(file_path, new_path)
-
-    # input and output dirs for the system annotation
-    dir_out_system = os.path.join(args.target_dir, "system")
-    files = glob.glob(os.path.join(args.system_annotation_dir, "**.xml"))
-    for file_path in files:
-        new_path = os.path.join(dir_out_system, os.path.basename(file_path))
-        handle_cleanup(file_path, new_path)
+    main(parser.parse_args())
