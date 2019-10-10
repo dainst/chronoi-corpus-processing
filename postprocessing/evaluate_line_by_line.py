@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import bs4
+import csv
 import enum
 import glob
 import os.path
@@ -29,8 +30,7 @@ class Result:
         self.result_type = result_type
         self.task_type = task_type
         self.tags = tags
-        if self.task_type == TaskType.ATTRIBUTE:
-            self.attr_name = attr_name
+        self.attr_name = attr_name
 
 
 class TaskEvaluation:
@@ -115,17 +115,6 @@ class Comparator:
         self.attributes = attributes if attributes else []
         self.results = []
 
-    def compare(self) -> [Result]:
-        # TODO: Consistency checks for documents
-        for idx, gold_line in enumerate(self.gold_doc.lines):
-            self._compare_lines_at(idx)
-        return self.results
-
-    def _build_tags_in_context(self, doc: Document, line_idx: int):
-        xml_doc = doc.line_xml_doc(line_idx)
-        tags = xml_doc.find_all(self.tag_name)
-        return list(map(lambda t: TagInContext(tag=t, doc=doc, line_idx=line_idx), tags))
-
     def _note_tag_relaxed(self, result_type: ResultType, tags: [TagInContext]):
         self.results.append(Result(TaskType.TAG_RELAXED, result_type, tags))
 
@@ -139,9 +128,15 @@ class Comparator:
         for attr_name in self.attributes:
             self._note_attr_result(result_type, tags, attr_name)
 
-    def _compare_lines_at(self, line_idx: int):
-        gold_tags = self._build_tags_in_context(self.gold_doc, line_idx)
-        system_tags = self._build_tags_in_context(self.system_doc, line_idx)
+    def compare(self) -> [Result]:
+        # TODO: Consistency checks for documents
+        for idx, gold_line in enumerate(self.gold_doc.lines):
+            self._compare_lines(gold_line, self.system_doc.line_at(idx))
+        return self.results
+
+    def _compare_lines(self, gold_line: DocumentLine, system_line: DocumentLine):
+        gold_tags = gold_line.get_tags_with_name(self.tag_name)
+        system_tags = system_line.get_tags_with_name(self.tag_name)
 
         # collect overlapping tags, count them as true positives for
         # the relaxed tag matching task and as possible matches for the
@@ -195,36 +190,77 @@ class Comparator:
                 self._note_attr_result(ResultType.FN, [gold_tag, system_tag], attr_name)
 
 
+class DocumentLine:
+
+    def __init__(self, doc: Document, line: str, previous: DocumentLine = None):
+        self.doc = doc
+        self.line = line
+        self.idx = previous.idx + 1 if previous else 0
+        self._xml_repr = self._build_xml_repr(line)
+        self.length = len(self._xml_repr.text)
+        self.start = previous.end + 1 if previous else 0
+        self.end = self.start + self.length - 1
+
+    @property
+    def text(self):
+        return self._xml_repr.text
+
+    @property
+    def is_gold(self):
+        return self.doc.is_gold
+
+    def _bounds_check_text_idx(self, idx: int) -> int:
+        if idx < 0:
+            idx = 0
+        if idx > len(self.text):
+            idx = len(self.text)
+        return idx
+
+    def text_at(self, start: int, end: int):
+        start = self._bounds_check_text_idx(start)
+        end = self._bounds_check_text_idx(end)
+        return self.text[start:end]
+
+    def get_tags_with_name(self, tag_name: str):
+        tags = self._xml_repr.find_all(tag_name)
+        return list(map(lambda t: TagInContext(tag=t, doc_line=self), tags))
+
+    @staticmethod
+    def _build_xml_repr(line: str) -> bs4.BeautifulSoup:
+        return bs4.BeautifulSoup(line, "lxml")
+
+
 class Document:
 
-    def __init__(self, path: str, basename: str):
+    def __init__(self, path: str, basename: str, is_gold: bool):
         self.path = path
         self.basename = basename
+        self.is_gold = is_gold
         self.lines = self._read_lines()
-        self._line_xml_docs = {}
 
-    def _read_lines(self) -> [str]:
+    def _read_lines(self) -> [DocumentLine]:
         with open(self.path) as f:
-            return f.read().splitlines()
+            lines = f.read().splitlines(keepends=True)
+        return self._lines_to_doc_lines(lines)
 
-    def _build_line_xml_doc(self, idx) -> bs4.BeautifulSoup:
-        doc = bs4.BeautifulSoup(self.lines[idx], "lxml")
-        self._line_xml_docs[idx] = doc
-        return doc
+    def _lines_to_doc_lines(self, lines: [str]) -> [DocumentLine]:
+        result = []
+        previous = None
+        for line in lines:
+            doc_line = DocumentLine(doc=self, line=line, previous=previous)
+            result.append(doc_line)
+            previous = doc_line
+        return result
 
-    def line_xml_doc(self, idx: int):
-        if idx in self._line_xml_docs:
-            return self._line_xml_docs[idx]
-        else:
-            return self._build_line_xml_doc(idx)
+    def line_at(self, idx: int) -> DocumentLine:
+        return self.lines[idx]
 
 
 class TagInContext:
 
-    def __init__(self, tag: bs4.Tag, doc: Document, line_idx: int):
+    def __init__(self, tag: bs4.Tag, doc_line: DocumentLine):
         self.tag = tag
-        self.doc = doc
-        self.line_idx = line_idx
+        self.doc_line = doc_line
         self._span = self._determine_line_pos()
 
     def _determine_line_pos(self) -> range:
@@ -241,12 +277,46 @@ class TagInContext:
             return self._count_chars_preceding(previous, count)
 
     @property
+    def doc(self) -> Document:
+        return self.doc_line.doc
+
+    @property
+    def idx_of_line(self):
+        return self.doc_line.idx
+
+    @property
     def text(self) -> str:
         return self.tag.text
 
     @property
     def line(self) -> str:
-        return self.doc.lines[self.line_idx]
+        return self.doc_line.line
+
+    @property
+    def is_gold(self) -> bool:
+        return self.doc_line.is_gold
+
+    @property
+    def start_in_line(self):
+        return self._span[0]
+
+    @property
+    def end_in_line(self):
+        return self._span[-1]
+
+    @property
+    def start_in_doc_text(self) -> int:
+        return self.doc_line.start + self.start_in_line
+
+    @property
+    def end_in_doc_text(self) -> int:
+        return self.doc_line.end + self.end_in_line
+
+    def text_before(self, length: int) -> str:
+        return self.doc_line.text_at(self.start_in_line - length, self.start_in_line)
+
+    def text_after(self, length: int) -> str:
+        return self.doc_line.text_at(self.end_in_line + 1, self.end_in_line + length)
 
     def attr(self, k: str) -> str:
         return self.tag.attrs.get(k, "")
@@ -282,10 +352,50 @@ class PrintUtil:
         for (k, v) in infos:
             cls._tab_print(k, v)
 
+    @classmethod
+    def print_results_csv(cls, file, results: [Result]):
+        writer = csv.writer(file, delimiter=";", quoting=csv.QUOTE_ALL, lineterminator=os.linesep)
+        cls._print_results_csv_header(writer)
+        for result in results:
+            cls._print_result_csv_line(writer, result)
+
+    @staticmethod
+    def _print_results_csv_header(csv_writer):
+        header_row = [
+            "task_type", "attr_name", "result_type",
+        ]
+        tag_headers = [
+            "basename", "lineno", "is_gold", "text_pos_start", "text_pos_end", "attr_type", "attr_value",
+            "before_text", "text", "after_text",
+        ]
+        for tag_no in [1, 2]:
+            header_row += map(lambda col_name: f"tag{tag_no}_{col_name}", tag_headers)
+        csv_writer.writerow(header_row)
+
+    @staticmethod
+    def _print_result_csv_line(csv_writer, result: Result):
+        row = [result.task_type.name, result.attr_name, result.result_type.name]
+        for idx, tag in enumerate(result.tags):
+            row += [
+                tag.doc.basename,
+                tag.idx_of_line + 1,
+                tag.is_gold,
+                tag.start_in_doc_text,
+                tag.end_in_doc_text,
+                tag.attr("type"),
+                tag.attr("value"),
+                tag.text_before(30),
+                tag.text,
+                tag.text_after(30).rstrip()
+            ]
+            if idx > 1:
+                break
+        csv_writer.writerow(row)
+
 
 def process_files(gold_file: str, system_file: str, basename: str) -> [Result]:
-    gold_doc = Document(path=gold_file, basename=basename)
-    system_doc = Document(path=system_file, basename=basename)
+    gold_doc = Document(path=gold_file, basename=basename, is_gold=True)
+    system_doc = Document(path=system_file, basename=basename, is_gold=False)
     comparator = Comparator(gold_doc=gold_doc, system_doc=system_doc, tag_name="timex3", attributes=["type", "value"])
     return comparator.compare()
 
@@ -321,18 +431,21 @@ def main(args):
             continue
         results += process_files(gold_file=gold_file, system_file=system_file, basename=basename)
 
-    relaxed_results = filter(lambda r: r.task_type == TaskType.TAG_RELAXED, results)
-    evaluation = TaskEvaluation(TaskType.TAG_RELAXED, relaxed_results)
-    PrintUtil.print_evaluation(evaluation, "RELAXED TAG")
-
-    strict_results = filter(lambda r: r.task_type == TaskType.TAG_STRICT, results)
-    evaluation = TaskEvaluation(TaskType.TAG_STRICT, strict_results)
-    PrintUtil.print_evaluation(evaluation, "STRICT TAG")
-
-    for attr in ["type", "value"]:
-        rs = filter(lambda r: r.task_type == TaskType.ATTRIBUTE and r.attr_name == attr, results)
-        evaluation = TaskEvaluation(TaskType.ATTRIBUTE, rs)
-        PrintUtil.print_evaluation(evaluation, f"ATTR MATCHING: \"{attr}\"")
+    if args.print_results_csv:
+        import sys
+        PrintUtil.print_results_csv(sys.stdout, results)
+    else:
+        to_print = [
+            ("RELAXED TAG", TaskType.TAG_RELAXED, filter(lambda r: r.task_type == TaskType.TAG_RELAXED, results)),
+            ("STRICT TAG", TaskType.TAG_STRICT, filter(lambda r: r.task_type == TaskType.TAG_STRICT, results)),
+        ]
+        for attr in ["type", "value"]:
+            attr_results = filter(lambda r: r.task_type == TaskType.ATTRIBUTE and r.attr_name == attr, results)
+            name = f"ATTR MATCHING: \"{attr}\""
+            to_print.append((name, TaskType.ATTRIBUTE, list(attr_results)))
+        for (name, task_type, rs) in to_print:
+            evaluation = TaskEvaluation(task_type=task_type, results=rs)
+            PrintUtil.print_evaluation(evaluation, name)
 
 
 if __name__ == '__main__':
@@ -348,5 +461,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("gold", type=str, help="The directory with the gold standard files or one such file.")
     parser.add_argument("system", type=str, help="The directory with system annotation files or one such file.")
+    parser.add_argument("--print_results_csv", action="store_true",
+                        help="Instead of printing evaluation results, output detailed csv records for each decision.")
 
     main(parser.parse_args())

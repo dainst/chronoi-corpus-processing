@@ -24,8 +24,11 @@ set -x
 docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py --no-fake-dct "${dir_standard}/*_DONE.xml" "${dir_eval}/bronze"
 docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py --no-fake-dct "${dir_annotations}/en/*.xml" "${dir_eval}/system"
 
-# Do the evaluation truncating unneccessary output with grep.
+# Evaluate and print some basic information
 docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py "${dir_eval}/bronze" "${dir_eval}/system"
+
+# Redo the evaluation, collection detailed information in a csv file
+docker exec chronoi-pilot python postprocessing/evaluate_line_by_line.py --print_results_csv "${dir_eval}/bronze" "${dir_eval}/system" > /tmp/A04-eval.csv
 
 # chown all files created here to the scripts user.
 correct_output_files_ownership
