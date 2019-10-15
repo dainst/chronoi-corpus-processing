@@ -51,7 +51,7 @@ def correct_value_attr_if_needed(elem) -> None:
     # with a "BC" at the end of the expression
     match = re.compile(r"-(.*)").match(elem.attrs.get("value"))
     if match:
-        elem.attrs["value"] = match[1] + "BC"
+        elem.attrs["value"] = "BC" + match[1]
     # also correct a leading plus sign by just removing it
     match = re.compile(r"\+(.*)").match(elem.attrs.get("value"))
     if match:

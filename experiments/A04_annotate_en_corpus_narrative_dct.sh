@@ -3,8 +3,11 @@
 # Require the shared functions used in multiple experiments.
 source "$(dirname $0)/util.sh"
 
+#input direcories
 dir_input="/srv/output/007_separate_by_language/en"
 dir_standard="/srv/output/A02_manual_correction/en"
+
+# output directories
 dir_annotations="/srv/output/A04_annotated_narrative"
 dir_eval="/srv/output/A05_annotated_narrative_eval"
 
@@ -27,7 +30,7 @@ docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py --no-fa
 # Evaluate and print some basic information
 docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py "${dir_eval}/bronze" "${dir_eval}/system"
 
-# Redo the evaluation, collection detailed information in a csv file
+# Redo the evaluation, collecting detailed information in a csv file
 docker exec chronoi-pilot python postprocessing/evaluate_line_by_line.py --print_results_csv "${dir_eval}/bronze" "${dir_eval}/system" > /tmp/A04-eval.csv
 
 # chown all files created here to the scripts user.
