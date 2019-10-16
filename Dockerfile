@@ -20,7 +20,9 @@ RUN pip3 install nltk \
     furl \
     SPARQLWrapper \
     beautifulsoup4 \
-    lxml
+    lxml \
+    tablign \
+    csvkit
 
 # download tokenization data for nltk
 RUN python3 -c "import nltk; nltk.download('punkt')"

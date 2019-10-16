@@ -21,8 +21,6 @@ annotate "${dir_input}/07_HallETAL2004.txt"              "en" "english" 2006-01-
 annotate "${dir_input}/17_AIA-News-107-Winter-1998.txt"  "en" "english" 1998-11-01 "narrative" "$dir_annotations"
 annotate "${dir_input}/18_AIA-News-136-Spring-2006A.txt" "en" "english" 2006-04-01 "narrative" "$dir_annotations"
 
-set -x
-
 # Prepare the xml files for evaluation.
 docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py --no-fake-dct "${dir_standard}/*_DONE.xml" "${dir_eval}/bronze"
 docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py --no-fake-dct "${dir_annotations}/en/*.xml" "${dir_eval}/system"
@@ -31,7 +29,11 @@ docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py --no-fa
 docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py "${dir_eval}/bronze" "${dir_eval}/system"
 
 # Redo the evaluation, collecting detailed information in a csv file
-docker exec chronoi-pilot python postprocessing/evaluate_line_by_line.py --print_results_csv "${dir_eval}/bronze" "${dir_eval}/system" > /tmp/A04-eval.csv
+eval_csv="${dir_eval}/eval.csv"
+docker exec -i chronoi-pilot bash -c "postprocessing/evaluate_line_by_line.py --print_results_csv ${dir_eval}/bronze ${dir_eval}/system > ${eval_csv}"
+
+# select information about false normalized values and print them
+docker exec -it chronoi-pilot bash postprocessing/describe_eval_decisions.sh "$eval_csv"
 
 # chown all files created here to the scripts user.
 correct_output_files_ownership
