@@ -5,6 +5,7 @@ import argparse
 import glob
 import langid
 import os
+import random
 import re
 import xml.sax.saxutils
 
@@ -95,6 +96,18 @@ def main(input_dir: str, output_dir: str, args: argparse.Namespace):
             new_content = xml.sax.saxutils.escape(content)
             scheme.write_file(out_path, new_content, create_dirs=True)
 
+        scheme.add_step(7, "sentence_window")
+        out_path = scheme.path(7)
+        if args.random_window > 0 and not scheme.file_exists(out_path):
+            lines = scheme.read_lines(scheme.path(6))
+            if len(lines) > args.random_window:
+                begin = random.randrange(0, len(lines) - args.random_window)
+                lines = lines[begin:(begin + args.random_window)]
+            scheme.write_lines(out_path, lines, create_dirs=True)
+        else:
+            # reset for the last step
+            out_path = scheme.path(6)
+
         scheme.add_step(42, "separate_by_language")
         path_from_last_step = out_path
         language_dir = os.path.join(scheme.dirname(42), language_code)
@@ -107,5 +120,7 @@ if __name__ == "__main__":
         description="Execute all preprocessing steps over the containers input directory.")
     parser.add_argument("--skip_manual_cleaning", action="store_true",
                         help="If present, skip the manual cleaning step.")
+    parser.add_argument("--random_window", type=int, default=0,
+                        help="If a random window of n sentences should be extracted from the text set this to n.")
 
     main("/srv/input", "/srv/output", parser.parse_args())
