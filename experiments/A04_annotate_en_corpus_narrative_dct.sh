@@ -4,7 +4,7 @@
 source "$(dirname $0)/util.sh"
 
 #input direcories
-dir_input="/srv/output/007_separate_by_language/en"
+dir_input="/srv/output/042_separate_by_language/en"
 dir_standard="/srv/output/A02_manual_correction/en"
 
 # output directories

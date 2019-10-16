@@ -16,7 +16,7 @@ source "$(dirname $0)/util.sh"
 # These are the source and target folders
 folder_annotated="/srv/output/A01_annotated"
 folder_manual_correction="/srv/output/A02_manual_correction"
-dir_input="/srv/output/007_separate_by_language"
+dir_input="/srv/output/042_separate_by_language"
 
 # Preprocess the pdf files
 docker exec -it chronoi-pilot python3 preprocessing.py

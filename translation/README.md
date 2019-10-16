@@ -10,7 +10,7 @@ All the following commands were executed in the docker container, e.g. after a `
 Translation of the corpus:
 
 ```bash
-./translate_en_corpus.sh /srv/output/007_separate_by_language
+./translate_en_corpus.sh corpus_dir
 ```
 
 Translation of temponyms by idai.vocab:

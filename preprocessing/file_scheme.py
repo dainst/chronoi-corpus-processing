@@ -1,5 +1,6 @@
 
 import os.path
+import shutil
 
 
 class FileScheme:
@@ -15,42 +16,59 @@ class FileScheme:
         self.basename = os.path.basename(basepath)
         self.output_dir = output_dir
 
-    def add_step(self, step_no: int, step_name: str):
-        if step_no in self.steps.keys():
+    def add_step(self, step: int, step_name: str):
+        if step in self.steps.keys():
             raise Exception("Step number already exists")
         else:
-            self.steps[step_no] = step_name
+            self.steps[step] = step_name
 
-    def __get_path(self, directory: str, extension):
+    def __path(self, directory: str, extension):
         return f"{directory}/{self.basename}.{extension}"
 
-    def __get_path_with_instruction_in_filename(self, directory: str, instruction: str, extension: str):
+    def __path_with_instruction(self, directory: str, instruction: str, extension: str):
         return f"{directory}/{self.basename}-{instruction}.{extension}"
 
-    def get_dirname_for_step(self, step_no: int):
-        number_str = "%03d" % step_no
-        folder_name = f"{number_str}_{self.steps[step_no]}"
+    def dirname(self, step: int):
+        number_str = "%03d" % step
+        folder_name = f"{number_str}_{self.steps[step]}"
         return os.path.join(self.output_dir, folder_name)
 
-    def get_path_for_step(self, step_no: int) -> str:
-        return self.__get_path(self.get_dirname_for_step(step_no), "txt")
+    def path(self, step: int) -> str:
+        return self.__path(self.dirname(step), "txt")
 
-    def get_todo_path_for_step(self, step_no: int) -> str:
-        return self.__get_path_with_instruction_in_filename(self.get_dirname_for_step(step_no), "TODO", "txt")
+    def todo_path(self, step: int) -> str:
+        return self.__path_with_instruction(self.dirname(step), "TODO", "txt")
 
-    def get_done_path_for_step(self, step_no: int) -> str:
-        return self.__get_path_with_instruction_in_filename(self.get_dirname_for_step(step_no), "DONE", "txt")
+    def done_path(self, step: int) -> str:
+        return self.__path_with_instruction(self.dirname(step), "DONE", "txt")
 
     @staticmethod
     def read_file(path: str) -> str:
         with open(path, 'r') as file:
             return file.read()
 
+    @classmethod
+    def read_lines(cls, path: str) -> [str]:
+        return cls.read_file(path).splitlines()
+
     @staticmethod
-    def write_file(file_path, content):
+    def write_file(file_path, content, create_dirs=False):
         assert not(os.path.isfile(file_path)), f"File already exists: {file_path}"
+        if create_dirs:
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, 'w') as f:
             f.write(content)
+
+    @classmethod
+    def write_lines(cls, path, lines: [str], create_dirs=False):
+        return cls.write_file(path, "\n".join(lines), create_dirs)
+
+    @staticmethod
+    def copy_file(src, dst, create_dirs=False):
+        if create_dirs:
+            dir = dst if os.path.isdir(dst) else os.path.dirname(dst)
+            os.makedirs(dir, exist_ok=True)
+        shutil.copy(src, dst)
 
     @staticmethod
     def file_exists(path: str) -> bool:
