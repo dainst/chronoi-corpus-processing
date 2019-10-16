@@ -4,10 +4,7 @@ import os.path
 
 class FileScheme:
 
-    # TODO: Should be an ENV variable / env variables
-    output_dir = "/srv/output"
-
-    def __init__(self, path: str):
+    def __init__(self, path: str, output_dir="/srv/output"):
         self.steps = {
             # 1 => "extract_texts,
             # 2 => "manual_cleaning",
@@ -16,7 +13,7 @@ class FileScheme:
         self.input_path = path
         (basepath, _) = os.path.splitext(path)
         self.basename = os.path.basename(basepath)
-        self.output_basepath = f"{self.output_dir}/{self.basename}"
+        self.output_dir = output_dir
 
     def add_step(self, step_no: int, step_name: str):
         if step_no in self.steps.keys():

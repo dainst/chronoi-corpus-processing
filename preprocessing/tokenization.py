@@ -1,17 +1,17 @@
 
 from nltk.data import load
 
-# We use one set of abbreviations for english and german text as they share some of them
+# We use one set of abbreviations for multiple languages as they share some of them
 # and a falsely concatenated sentence is not too bad for us.
 abbreviations = [
     # from german texts
-    "s", "jh", "jhs", "ca", "abb", "vs", "a", "o", "n", "z", "p", "x", "c", \
-    "jahresh", "beibl", "s.o", "s.d", "tab", "reg", "real-encyclop", "zeitschr", \
-    "griech", "brit", "mus", "cat", "corr", "bull", "hell", "mitt", "cos", "mitt", \
-    "anc", "berl", "sitzungsber", "epigr", "diz", "chr", "add", "art", "ivn", "nob", \
+    "s", "jh", "jhs", "ca", "abb", "vs", "a", "o", "n", "z", "p", "x", "c",
+    "jahresh", "beibl", "s.o", "s.d", "tab", "reg", "real-encyclop", "zeitschr",
+    "griech", "brit", "mus", "cat", "corr", "bull", "hell", "mitt", "cos", "mitt",
+    "anc", "berl", "sitzungsber", "epigr", "diz", "chr", "add", "art", "ivn", "nob",
     # from english texts
-    "i.e", "tac", "ann", "suet", "al", "ed", "nos", "no", "ch", "chs", "cf", \
-    "e.g", "sp", "spp", "suppl", "etal", "cm", "fig", "figs", "vol"
+    "i.e", "tac", "ann", "suet", "al", "ed", "nos", "no", "ch", "chs", "cf",
+    "e.g", "sp", "spp", "suppl", "etal", "cm", "fig", "figs", "vol",
 ]
 
 # to not split sentences on "19. Jahrhundert" etc.

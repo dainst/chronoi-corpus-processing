@@ -28,7 +28,7 @@ RUN pip3 install nltk \
 RUN python3 -c "import nltk; nltk.download('punkt')"
 
 # copy hunspell dictionaries in place
-COPY resources/de_DE.aff resources/de_DE.dic /usr/share/hunspell/
+COPY resources/hunspell/*.aff  resources/hunspell/*.dic /usr/share/hunspell/
 
 # create the log file if it doesn't exist
 ARG log_file=/var/log/chronoi-pilot.log
