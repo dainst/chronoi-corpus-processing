@@ -1,6 +1,7 @@
 
 import re
 import hunspell
+import xml.sax.saxutils
 
 # NOTE: Strictly speaking, the german dictionaries are not needed anymore,
 #       but I left this here for future use with different languages
@@ -26,7 +27,7 @@ def __get_spellchecker(language_code):
     return result
 
 
-def __should_remove_hyphen_between(word1: str, word2: str, language_code):
+def __conditionally_combine_hyphenated(word1: str, word2: str, language_code: str, always_combine=False):
     """
     Check if a character "-" should be removed from the first word based
     on language characteristics
@@ -36,7 +37,9 @@ def __should_remove_hyphen_between(word1: str, word2: str, language_code):
     result = False
     combined = word1.rstrip("-") + word2
 
-    if language_code == "de":
+    if always_combine:
+        result = combined
+    elif language_code == "de":
         # if the language is german, just check if the second word begins
         # with a small letter
         if isinstance(word2, str) and len(word2) > 0 and word2[0].islower():
@@ -53,12 +56,12 @@ def __should_remove_hyphen_between(word1: str, word2: str, language_code):
     return result
 
 
-def lines_remove_hyphens(line1: str, line2: str, language_code: str) -> (str, str):
+def __lines_remove_hyphens(line1: str, line2: str, language_code: str, always_combine=False) -> (str, str):
     result = (line1, line2)
     if re.compile("-$").findall(line1):
         # split the two lines into words
         words1, words2 = map(lambda l: l.split(" "), [line1, line2])
-        check_result = __should_remove_hyphen_between(words1[-1], words2[0], language_code)
+        check_result = __conditionally_combine_hyphenated(words1[-1], words2[0], language_code, always_combine)
         if isinstance(check_result, str):
             # pull the combined word into the first line
             words1[-1] = check_result
@@ -67,3 +70,24 @@ def lines_remove_hyphens(line1: str, line2: str, language_code: str) -> (str, st
         else:
             print("Not removing hyphen: ", words1[-1], words2[0])
     return result
+
+
+def remove_end_of_line_hyphens(lines: [str], language_code: str = "en", always_combine=False):
+    for i in range(0, len(lines) - 1):
+        l1, l2 = __lines_remove_hyphens(lines[i], lines[i + 1], language_code, always_combine)
+        lines[i] = l1
+        lines[i + 1] = l2
+    return lines
+
+
+def cleanup_whitespace(lines: [str]):
+    # filter out all lines, that are entirely whitespace
+    lines = [l for l in lines if not re.match(r"^\s*$", l)]
+    # strip whitespace to the left of each line
+    lines = [l.strip() for l in lines]
+    # if there are two or more whitespace chars, replace them by a blank
+    return [re.sub(r"\s{2,}", " ", l) for l in lines]
+
+
+def escape_xml_chars(text: str):
+    return xml.sax.saxutils.escape(text)

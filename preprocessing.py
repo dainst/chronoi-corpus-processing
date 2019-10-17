@@ -7,11 +7,11 @@ import langid
 import os
 import random
 import re
-import xml.sax.saxutils
 
+
+from preprocessing import cleaning
 from preprocessing.file_scheme import FileScheme
 from preprocessing.text_extraction import TextExtractor
-from preprocessing.cleaning import lines_remove_hyphens
 from preprocessing.tokenization import sentence_tokenizer
 
 
@@ -50,13 +50,7 @@ def main(input_dir: str, output_dir: str, args: argparse.Namespace):
         out_path = scheme.path(3)
         if not scheme.file_exists(out_path):
             lines = scheme.read_lines(scheme.done_path(2))
-
-            # filter out all lines, that are entirely whitespace, then
-            # remove the unnecessary whitespace
-            lines = [l for l in lines if not re.match(r"^\s*$", l)]
-            lines = [l.strip() for l in lines]
-            lines = [re.sub(r"\s{2,}", " ", l) for l in lines]
-
+            lines = cleaning.cleanup_whitespace(lines)
             scheme.write_lines(out_path, lines, create_dirs=True)
 
         # detect the document language
@@ -70,20 +64,15 @@ def main(input_dir: str, output_dir: str, args: argparse.Namespace):
         out_path = scheme.path(4)
         if not scheme.file_exists(out_path):
             lines = scheme.read_lines(scheme.path(3))
-            for i in range(0, len(lines) - 1):
-                l1, l2 = lines_remove_hyphens(lines[i], lines[i + 1], language_code)
-                lines[i] = l1
-                lines[i+1] = l2
+            lines = cleaning.remove_end_of_line_hyphens(lines, language_code, args.always_combine_hyphens)
             scheme.write_lines(out_path, lines, create_dirs=True)
 
         scheme.add_step(5, "tokenize_sententces")
         out_path = scheme.path(5)
         if not scheme.file_exists(out_path):
             content = scheme.read_file(scheme.path(4))
-
             tokenizer = sentence_tokenizer(_project_languages[language_code])
             sentences = tokenizer.tokenize(content)
-
             # since no hyphen should exist at this point, we can just cat the lines together
             sentences = map(lambda s: re.sub(r"\s+", " ", s), sentences)
             sentences = map(str.strip, sentences)
@@ -93,7 +82,7 @@ def main(input_dir: str, output_dir: str, args: argparse.Namespace):
         out_path = scheme.path(6)
         if not scheme.file_exists(out_path):
             content = scheme.read_file(scheme.path(5))
-            new_content = xml.sax.saxutils.escape(content)
+            new_content = cleaning.escape_xml_chars(content)
             scheme.write_file(out_path, new_content, create_dirs=True)
 
         scheme.add_step(7, "sentence_window")
@@ -122,5 +111,7 @@ if __name__ == "__main__":
                         help="If present, skip the manual cleaning step.")
     parser.add_argument("--random_window", type=int, default=0,
                         help="If a random window of n sentences should be extracted from the text set this to n.")
+    parser.add_argument("--always_combine_hyphens", action="store_true",
+                        help="If a line ends in a hyphen, always combine the hyphenated words (without a spellcheck).")
 
     main("/srv/input", "/srv/output", parser.parse_args())
