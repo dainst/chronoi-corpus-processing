@@ -341,7 +341,9 @@ class PrintUtil:
             ("FN", evaluation.fn),
             ("precision", evaluation.precision),
             ("recall", evaluation.recall),
-            ("F1", evaluation.f1_score)
+            ("F.5", evaluation.fn_score(0.5)),
+            ("F1", evaluation.f1_score),
+            ("F2", evaluation.fn_score(2.0)),
         ]
 
         if evaluation.task_type == TaskType.ATTRIBUTE:
@@ -365,7 +367,7 @@ class PrintUtil:
             "task_type", "attr_name", "result_type",
         ]
         tag_headers = [
-            "basename", "lineno", "is_gold", "text_pos_start", "text_pos_end", "attr_type", "attr_value",
+            "basename", "lineno", "is_gold", "text_pos_start", "text_pos_end", "attr_tid", "attr_type", "attr_value",
             "before_text", "text", "after_text",
         ]
         for tag_no in [1, 2]:
@@ -382,6 +384,7 @@ class PrintUtil:
                 tag.is_gold,
                 tag.start_in_doc_text,
                 tag.end_in_doc_text,
+                tag.attr("tid"),
                 tag.attr("type"),
                 tag.attr("value"),
                 tag.text_before(30),
