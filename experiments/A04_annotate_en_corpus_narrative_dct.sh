@@ -22,7 +22,8 @@ annotate "${dir_input}/17_AIA-News-107-Winter-1998.txt"  "en" "english" 1998-11-
 annotate "${dir_input}/18_AIA-News-136-Spring-2006A.txt" "en" "english" 2006-04-01 "narrative" "$dir_annotations"
 
 # Prepare the xml files for evaluation.
-docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py --no-fake-dct "${dir_standard}/*_DONE.xml" "${dir_eval}/bronze"
+docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py --no-fake-dct --keep-attr "literature-time" "${dir_standard}/*_DONE.xml" "${dir_eval}/bronze"
+
 docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py --no-fake-dct "${dir_annotations}/en/*.xml" "${dir_eval}/system"
 
 # Evaluate and print some basic information
@@ -34,6 +35,9 @@ docker exec -i chronoi-pilot bash -c "postprocessing/evaluate_line_by_line.py --
 
 # select information about false normalized values and print them
 docker exec -it chronoi-pilot bash postprocessing/describe_eval_decisions.sh "$eval_csv"
+
+# Redo the evaluation again, but this this time only regarding literature references
+docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py --only_with_attr="literature-time:true" "${dir_eval}/bronze" "${dir_eval}/system"
 
 # chown all files created here to the scripts user.
 correct_output_files_ownership

@@ -17,6 +17,7 @@ class Config:
         ]
         self.lstrip_lines = True
         self.add_fake_dct = True
+        self.strip_attrs = [ "check", "literature-time", "exploration-time" ]
 
 
 def tag_matches_definition(elem: bs4.Tag, tag_def: dict) -> bool:
@@ -78,9 +79,8 @@ def recursively_cleanup_element(elem: bs4.Tag, config: Config) -> None:
     # handle attributes (should only be in TIMEX3s)
     correct_tid_attr_if_needed(elem)
     correct_value_attr_if_needed(elem)
-    elem.attrs.pop("check", None)
-    elem.attrs.pop("literature-time", None)
-    elem.attrs.pop("exploration-time", None)
+    for attr_name in config.strip_attrs:
+        elem.attrs.pop(attr_name, None)
 
 
 def add_timeml_namespace_info(timeml_tag: bs4.Tag):
@@ -154,6 +154,9 @@ def build_config(args) -> Config:
         config.remove_tags.append({"tag": "TIMEX3INTERVAL"})
     if not args.keep_temponyms:
         config.remove_tags.append({"tag": "TIMEX3", "attrs": {"type": "TEMPONYM"}})
+    for attr in args.keep_attr:
+        if attr in config.strip_attrs:
+            config.strip_attrs.remove(attr)
     config.lstrip_lines = not args.no_lstrip_lines
     config.add_fake_dct = not args.no_fake_dct
     return config
@@ -175,6 +178,7 @@ if __name__ == "__main__":
         description="Prepare a directory of files for evaluation by the tempeval scripts.")
     parser.add_argument("input_path", type=str, help="A glob expression used for searching input files, e.g.: '../data/*.xml'")
     parser.add_argument("output_dir", type=str, help="A directory to put the prepared files into. Will be created if needed.")
+    parser.add_argument("--keep-attr", type=str, action="append", default=[], help="Keep timex3 attributes, that would otherwise be removed. Can be given multiple times.")
     parser.add_argument("--keep-intervals", action="store_true", help="If present, TIMEX3INTERVAL tags are not removed")
     parser.add_argument("--keep-temponyms", action="store_true", help="If present, TIMEX3 with TEMPONYM are not removed")
     parser.add_argument("--no-lstrip-lines", action="store_true", help="If present, do not clean whitespace starting each line.")

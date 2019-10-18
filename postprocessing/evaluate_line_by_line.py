@@ -32,6 +32,14 @@ class Result:
         self.tags = tags
         self.attr_name = attr_name
 
+    def involves_tag_with(self, attr: str, value: str) -> bool:
+        result = False
+        for tag in self.tags:
+            if tag.attr(attr) and tag.attr(attr) == value:
+                result = True
+                break
+        return result
+
 
 class TaskEvaluation:
 
@@ -147,7 +155,7 @@ class Comparator:
                 if gold_tag.overlaps(system_tag):
                     overlapping.add((gold_tag, system_tag))
                     self._note_tag_relaxed(ResultType.TP, [gold_tag, system_tag])
-                    self._note_result_for_all_attribute_tasks(ResultType.ATTR_MATCH_POSSIBLE, [])
+                    self._note_result_for_all_attribute_tasks(ResultType.ATTR_MATCH_POSSIBLE, [gold_tag, system_tag])
                     self._compare_tags(gold_tag, system_tag)
 
         # the non-overlapping tags count as false positives or false negatives for
@@ -434,6 +442,14 @@ def main(args):
             continue
         results += process_files(gold_file=gold_file, system_file=system_file, basename=basename)
 
+    if args.only_with_attr:
+        attr, value = args.only_with_attr.split(":", maxsplit=1)
+        results = [r for r in results if r.involves_tag_with(attr=attr, value=value)]
+
+    if args.disregard_with_attr:
+        attr, value = args.disregard_with_attr.split(":", maxsplit=1)
+        results = [r for r in results if not r.involves_tag_with(attr=attr, value=value)]
+
     if args.print_results_csv:
         import sys
         PrintUtil.print_results_csv(sys.stdout, results)
@@ -464,6 +480,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("gold", type=str, help="The directory with the gold standard files or one such file.")
     parser.add_argument("system", type=str, help="The directory with system annotation files or one such file.")
+    parser.add_argument("--only_with_attr", type=str, default="",
+                        help="Format: 'attr:value'. Only include results involving tags with an attribute equal to the value.")
+    parser.add_argument("--disregard_with_attr", type=str, default="",
+                        help="Format: 'attr:value'. Disregard results involving tags with an attribute equal to the value.")
     parser.add_argument("--print_results_csv", action="store_true",
                         help="Instead of printing evaluation results, output detailed csv records for each decision.")
 
