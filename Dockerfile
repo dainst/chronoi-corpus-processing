@@ -6,7 +6,8 @@ RUN apt-get update
 RUN apt-get -y install \
     ghostscript \
     python3-dev \
-    libhunspell-dev
+    libhunspell-dev \
+    plotutils
 
 # install python dependencies
 RUN pip3 install nltk \
@@ -26,6 +27,10 @@ RUN pip3 install nltk \
 
 # download tokenization data for nltk
 RUN python3 -c "import nltk; nltk.download('punkt')"
+
+# install xidel for comand line xpath instructions
+RUN wget --quiet "https://sourceforge.net/projects/videlibri/files/Xidel/Xidel%200.9.8/xidel-0.9.8.linux64.tar.gz"
+RUN tar xzf "xidel-0.9.8.linux64.tar.gz" -C "/usr/bin" && rm "xidel-0.9.8.linux64.tar.gz"
 
 # copy hunspell dictionaries in place
 COPY resources/hunspell/*.aff  resources/hunspell/*.dic /usr/share/hunspell/

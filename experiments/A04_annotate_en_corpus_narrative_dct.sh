@@ -33,11 +33,17 @@ docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py "${
 eval_csv="${dir_eval}/eval.csv"
 docker exec -i chronoi-pilot bash -c "postprocessing/evaluate_line_by_line.py --print_results_csv ${dir_eval}/bronze ${dir_eval}/system > ${eval_csv}"
 
-# select information about false normalized values and print them
+# print the text occurences with context for some of the different evaluation decisions
 docker exec -it chronoi-pilot bash postprocessing/describe_eval_decisions.sh "$eval_csv"
 
 # Redo the evaluation again, but this this time only regarding literature references
 docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py --only_with_attr="literature-time:true" "${dir_eval}/bronze" "${dir_eval}/system"
+
+# print distribution plots for the tokens found in the texts
+num_bins=10
+plots_folder="${dir_eval}/distribution-timex"
+docker exec -it chronoi-pilot mkdir -p "$plots_folder"
+docker exec -it chronoi-pilot bash postprocessing/plot_distributions.sh "$dir_annotations" "$eval_csv" "$num_bins" "$plots_folder"
 
 # chown all files created here to the scripts user.
 correct_output_files_ownership
