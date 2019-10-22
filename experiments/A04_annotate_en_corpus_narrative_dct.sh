@@ -23,7 +23,6 @@ annotate "${dir_input}/18_AIA-News-136-Spring-2006A.txt" "en" "english" 2006-04-
 
 # Prepare the xml files for evaluation.
 docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py --no-fake-dct --keep-attr "literature-time" "${dir_standard}/*_DONE.xml" "${dir_eval}/bronze"
-
 docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py --no-fake-dct "${dir_annotations}/en/*.xml" "${dir_eval}/system"
 
 # Evaluate and print some basic information
@@ -36,14 +35,27 @@ docker exec -i chronoi-pilot bash -c "postprocessing/evaluate_line_by_line.py --
 # print the text occurences with context for some of the different evaluation decisions
 docker exec -it chronoi-pilot bash postprocessing/describe_eval_decisions.sh "$eval_csv"
 
-# Redo the evaluation again, but this this time only regarding literature references
+# Redo the evaluation again, but this this time only for or without literature references
+echo "LITERATURE REFERENCES"
 docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py --only_with_attr="literature-time:true" "${dir_eval}/bronze" "${dir_eval}/system"
+echo "NO LITERATURE REFERENCES"
+docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py --disregard_with_attr="literature-time:true" "${dir_eval}/bronze" "${dir_eval}/system"
 
 # print distribution plots for the tokens found in the texts
 num_bins=10
 plots_folder="${dir_eval}/distribution-timex"
 docker exec -it chronoi-pilot mkdir -p "$plots_folder"
 docker exec -it chronoi-pilot bash postprocessing/plot_distributions.sh "$dir_annotations" "$eval_csv" "$num_bins" "$plots_folder"
+
+num_bins=5
+plots_folder="${dir_eval}/distribution-timex-lit"
+docker exec -it chronoi-pilot mkdir -p "$plots_folder"
+docker exec -it chronoi-pilot bash postprocessing/plot_distributions.sh "$dir_annotations" "$eval_csv" "$num_bins" "$plots_folder" "tag1_attr_literature_time = True"
+
+num_bins=5
+plots_folder="${dir_eval}/distribution-timex-nonlit"
+docker exec -it chronoi-pilot mkdir -p "$plots_folder"
+docker exec -it chronoi-pilot bash postprocessing/plot_distributions.sh "$dir_annotations" "$eval_csv" "$num_bins" "$plots_folder" "tag1_attr_literature_time is null"
 
 # chown all files created here to the scripts user.
 correct_output_files_ownership

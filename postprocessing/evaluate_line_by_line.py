@@ -375,7 +375,8 @@ class PrintUtil:
             "task_type", "attr_name", "result_type",
         ]
         tag_headers = [
-            "basename", "lineno", "is_gold", "text_pos_start", "text_pos_end", "attr_tid", "attr_type", "attr_value",
+            "basename", "lineno", "is_gold", "text_pos_start", "text_pos_end",
+            "attr_tid", "attr_type", "attr_value", "attr_literature_time",
             "before_text", "text", "after_text",
         ]
         for tag_no in [1, 2]:
@@ -395,6 +396,7 @@ class PrintUtil:
                 tag.attr("tid"),
                 tag.attr("type"),
                 tag.attr("value"),
+                tag.attr("literature-time"),
                 tag.text_before(30),
                 tag.text,
                 tag.text_after(30).rstrip()
