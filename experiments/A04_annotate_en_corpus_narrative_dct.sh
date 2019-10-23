@@ -11,6 +11,10 @@ dir_standard="/srv/output/A02_manual_correction/en"
 dir_annotations="/srv/output/A04_annotated_narrative"
 dir_eval="/srv/output/A05_annotated_narrative_eval"
 
+# rebuild the temponyms and heideltime jar if any of the temponym files changed
+# docker exec -it chronoi-pilot python3 chronontology_export.py
+docker exec -it heideltime /srv/app/scripts/build_with_temponyms.sh /srv/output/heideltime_temponym_files
+
 # Run the annotations.
 annotate "${dir_input}/02_Smith2018.txt"                 "en" "english" 2018-01-01 "narrative" "$dir_annotations"
 annotate "${dir_input}/03_Veenhof2018.txt"               "en" "english" 2017-01-01 "narrative" "$dir_annotations"
@@ -45,7 +49,6 @@ docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py --d
 plots_folder="${dir_eval}/distribution-timex"
 plots_folder_lit="${dir_eval}/distribution-timex-lit"
 plots_folder_nonlit="${dir_eval}/distribution-timex-nonlit"
-docker exec -it chronoi-pilot mkdir -p "$plots_folder" "$plots_folder_lit" "$plots_folder_nonlit"
 
 num_bins=10
 docker exec -it chronoi-pilot bash postprocessing/plot_distributions.sh "$dir_annotations" "$eval_csv" "$num_bins" "$plots_folder"
@@ -55,6 +58,18 @@ docker exec -it chronoi-pilot bash postprocessing/plot_distributions.sh "$dir_an
 docker exec -it chronoi-pilot bash postprocessing/plot_distributions.sh "$dir_annotations" "$eval_csv" "$num_bins" "$plots_folder_nonlit" "tag1_attr_literature_time is null"
 
 
+# Prepare the xml files again, but this time for the temponym evaluation
+docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py --no-fake-dct --only-temponyms --keep-attr "literature-time" "${dir_standard}/*_DONE.xml" "${dir_eval}/bronze-temponyms"
+docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py --no-fake-dct --only-temponyms "${dir_annotations}/en/*.xml" "${dir_eval}/system-temponyms"
+
+# Evaluate the temponyms
+echo "TEMPONYM PERFORMANCE"
+docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py "${dir_eval}/bronze-temponyms" "${dir_eval}/system-temponyms"
+
+# Evaluate the temponyms again, record decisions and print the distribution plots
+eval_temponyms_csv="${dir_eval}/eval_temponyms.csv"
+docker exec -i chronoi-pilot bash -c "postprocessing/evaluate_line_by_line.py --print_results_csv ${dir_eval}/bronze-temponyms ${dir_eval}/system-temponyms > ${eval_temponyms_csv}"
+docker exec -it chronoi-pilot bash postprocessing/plot_distributions.sh "$dir_annotations" "$eval_temponyms_csv" 10 "${dir_eval}/distribution-temponyms"
 
 # chown all files created here to the scripts user.
 correct_output_files_ownership

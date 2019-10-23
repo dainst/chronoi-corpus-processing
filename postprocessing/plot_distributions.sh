@@ -52,6 +52,8 @@ plot_histogram() {
             -L "$plot_name"
 }
 
+mkdir -p "$output_dir"
+
 num_texts=0
 all_histograms=""
 for f in $(find "$gold_dir" -type f | sort -n)
@@ -73,9 +75,6 @@ do
     # append the number of occurences into a third column of the histogram table
     hist_with_occ_count=$(paste <(echo "$histogram") <(echo "$occurences" | wc -l))
 
-    # print some output for this text
-    echo -e "${base_name} (${additional_sql_conditions}):\n${hist_with_occ_count}"
-
     # append to the total number of histograms
     all_histograms="${all_histograms}\n${hist_with_occ_count}"
 done
@@ -87,11 +86,9 @@ all_histograms=$(echo -e "$all_histograms" | tail -n +2)
 hist_sums=$(echo "$all_histograms" \
                      | awk '{ if ($2 > 0) counts[$1] += $2 } END { for (idx in counts) print idx"\t"counts[idx] }' )
 plot_histogram "$hist_sums" "all, ${additional_sql_conditions}" > "${output_dir}/00_all_texts_distribution.png"
-echo -e "All Texts (${additional_sql_conditions}):\n${hist_sums}"
 
 # weigh by count of occurences in each text
 hist_sums=$(echo "$all_histograms" \
     | awk '{ if ($3 > 0) n=$3; printf("%d\t%.4f\n", $1, ($2 / n))} ' \
     | awk '{ if ($2 > 0) counts[$1] += $2 } END { for (idx in counts) printf("%d\t%.4f\n", idx, (counts[idx] / '$num_texts')) }' )
 plot_histogram "$hist_sums" "all (means, ${additional_sql_conditions})" > "${output_dir}/00_all_texts_distribution_weighed.png"
-echo -e "All Texts (means - ${additional_sql_conditions}):\n${hist_sums}"

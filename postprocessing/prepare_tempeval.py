@@ -12,9 +12,9 @@ class Config:
 
     def __init__(self):
         self.remove_tags = [
-            {"tag": "temponym-fn"},
             {"tag": "TIMEX3", "attrs": {"check": "false-positive"}}
         ]
+        self.replace_tags = []
         self.lstrip_lines = True
         self.add_fake_dct = True
         self.strip_attrs = [ "check", "literature-time", "exploration-time" ]
@@ -70,11 +70,17 @@ def recursively_cleanup_element(elem: bs4.Tag, config: Config) -> None:
     for child_elem in elem.children:
         recursively_cleanup_element(child_elem, config)
 
-    # remove attributes if they fit one of the removal definitions
+    # remove tags if they fit one of the removal definitions
     for definition in config.remove_tags:
         if tag_matches_definition(elem, definition):
             elem.unwrap()
             break
+
+    # replace tags if they fit one of the replacement definitions
+    for definition in config.replace_tags:
+        if tag_matches_definition(elem, definition):
+            callback = definition.get("callback")
+            callback(elem)
 
     # handle attributes (should only be in TIMEX3s)
     correct_tid_attr_if_needed(elem)
@@ -148,12 +154,28 @@ def handle_cleanup(input_path: str, output_path: str, config: Config):
         output_file.write(xml_str)
 
 
+def change_temponym_fn_tag_to_timex(tag: bs4.Tag):
+    tag.name = "TIMEX3"
+    tag.attrs["value"] = tag.attrs.get("type", "")
+    tag.attrs["type"] = "TEMPONYM"
+
+
 def build_config(args) -> Config:
     config = Config()
+    # handle the tag removals
     if not args.keep_intervals:
         config.remove_tags.append({"tag": "TIMEX3INTERVAL"})
-    if not args.keep_temponyms:
+    if not (args.keep_temponyms or args.only_temponyms):
         config.remove_tags.append({"tag": "TIMEX3", "attrs": {"type": "TEMPONYM"}})
+    # handle the special case of temponym-output only
+    if args.only_temponyms:
+        for attr in [ "DATE", "TIME", "DURATION", "SET"]:
+            config.remove_tags.append({ "tag": "TIMEX3", "attrs": { "type": attr}})
+        config.replace_tags.append({ "tag": "temponym-fn", "callback": change_temponym_fn_tag_to_timex })
+        config.remove_tags = [d for d in config.remove_tags if not d.get("tag") == "temponym-fn"]
+    else:
+        config.remove_tags.append({"tag": "temponym-fn"})
+
     for attr in args.keep_attr:
         if attr in config.strip_attrs:
             config.strip_attrs.remove(attr)
@@ -181,6 +203,7 @@ if __name__ == "__main__":
     parser.add_argument("--keep-attr", type=str, action="append", default=[], help="Keep timex3 attributes, that would otherwise be removed. Can be given multiple times.")
     parser.add_argument("--keep-intervals", action="store_true", help="If present, TIMEX3INTERVAL tags are not removed")
     parser.add_argument("--keep-temponyms", action="store_true", help="If present, TIMEX3 with TEMPONYM are not removed")
+    parser.add_argument("--only-temponyms", action="store_true", help="If present, keep all temponym-Tags, remove others and convert <temponym-fn />-tags")
     parser.add_argument("--no-lstrip-lines", action="store_true", help="If present, do not clean whitespace starting each line.")
     parser.add_argument("--no-fake-dct", action="store_true", help="If present, do not add a fake DCT tag.")
 

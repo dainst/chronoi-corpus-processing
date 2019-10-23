@@ -21,7 +21,7 @@ dir_input="/srv/output/042_separate_by_language"
 # Preprocess the pdf files
 docker exec -it chronoi-pilot python3 preprocessing.py
 
-# create temponym files for heideltime and tell heideltime to recompile itself
+# create temponym files for heideltime
 docker exec -it chronoi-pilot python3 chronontology_export.py
 
 # rebuild the heideltime jar if any of the temponym files changed

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Processes a csv file produced by the evaluation script (evaluat_line_by_line.py)
+# Processes a csv file produced by the evaluation script (evaluate_line_by_line.py)
 # and displays information on the text areas that produced negative results
 eval_csv="$1"
 
