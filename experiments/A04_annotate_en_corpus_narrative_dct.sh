@@ -42,20 +42,19 @@ echo "NO LITERATURE REFERENCES"
 docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py --disregard_with_attr="literature-time:true" "${dir_eval}/bronze" "${dir_eval}/system"
 
 # print distribution plots for the tokens found in the texts
-num_bins=10
 plots_folder="${dir_eval}/distribution-timex"
-docker exec -it chronoi-pilot mkdir -p "$plots_folder"
+plots_folder_lit="${dir_eval}/distribution-timex-lit"
+plots_folder_nonlit="${dir_eval}/distribution-timex-nonlit"
+docker exec -it chronoi-pilot mkdir -p "$plots_folder" "$plots_folder_lit" "$plots_folder_nonlit"
+
+num_bins=10
 docker exec -it chronoi-pilot bash postprocessing/plot_distributions.sh "$dir_annotations" "$eval_csv" "$num_bins" "$plots_folder"
 
 num_bins=5
-plots_folder="${dir_eval}/distribution-timex-lit"
-docker exec -it chronoi-pilot mkdir -p "$plots_folder"
-docker exec -it chronoi-pilot bash postprocessing/plot_distributions.sh "$dir_annotations" "$eval_csv" "$num_bins" "$plots_folder" "tag1_attr_literature_time = True"
+docker exec -it chronoi-pilot bash postprocessing/plot_distributions.sh "$dir_annotations" "$eval_csv" "$num_bins" "$plots_folder_lit" "tag1_attr_literature_time = True"
+docker exec -it chronoi-pilot bash postprocessing/plot_distributions.sh "$dir_annotations" "$eval_csv" "$num_bins" "$plots_folder_nonlit" "tag1_attr_literature_time is null"
 
-num_bins=5
-plots_folder="${dir_eval}/distribution-timex-nonlit"
-docker exec -it chronoi-pilot mkdir -p "$plots_folder"
-docker exec -it chronoi-pilot bash postprocessing/plot_distributions.sh "$dir_annotations" "$eval_csv" "$num_bins" "$plots_folder" "tag1_attr_literature_time is null"
+
 
 # chown all files created here to the scripts user.
 correct_output_files_ownership
