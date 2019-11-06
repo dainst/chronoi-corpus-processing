@@ -30,3 +30,46 @@
 
 <!ELEMENT temponym-fn ( #PCDATA ) >
 <!ATTLIST temponym-fn type ( period | people | dynasty | reign | person | birth | death | ancient-calendar | level | language | incisive-event | culture | war | invention | building ) #REQUIRED >
+
+<!-- Version 1.0 of the annotation scheme for temponyms and dateable entities -->
+
+<!-- 
+    The attributes for the temponym type follow the chronontology data model. See e.g.:
+    https://chronontology.dainst.org/info/about
+-->
+<!ELEMENT TEMPONYM ( #PCDATA ) >
+<!ATTLIST TEMPONYM type (
+    not-specified
+    | geo
+        | geo-age | geo-eon | geo-epoch | geo-era | geo-period | geo-supereon
+    | political-historical
+    | cultural
+    | material-culture
+        | mc-architecture | mc-art | mc-ceramic | mc-decorative-arts | mc-fine-arts
+        | mc-glass | mc-glass-vessels | mc-glyptic | mc-lacquer | mc-metal-bowls
+        | mc-metal-ware | mc-painting | mc-photography | mc-porcelain | mc-pottery
+        | mc-printmaking | mc-rock-art | mc-sculpture | mc-stone-tools | mc-textile | mc-wall-painting
+) #REQUIRED >
+
+<!--
+    DNEs are "Dateable Named Entities"
+    Note: Presumably every named entity can potentially be given a date. These are
+    different from temponyms in that they occur in a syntactical context that cannot be occupied
+    by a time expression (there exists no substitution with a regular time expression that would
+    constitute a well-formed expression).
+    We include the basic named entity types of events, persons and locations.
+-->
+<!ELEMENT DNE ( #PCDATA ) >
+<!ATTLIST DNE type (event | person | location | other) #REQUIRED >
+
+<!--
+    We mark occurences of literary references as they generally constitute a different
+    temporal frame of reference than the main text and a time tagger might have to distinguish
+    occurences of this kind.
+    This tag should include any token that marks the beginnig and end of a literary reference.
+    (Usually these are marked up as hyphens, but indicaters such as "cf.", "see", etc. should
+    also be included.)
+    Literary references should be marked up even if they do not contain a temporal expression.
+-->
+<!ELEMENT LITREF ( #PCDATA ) >
+
