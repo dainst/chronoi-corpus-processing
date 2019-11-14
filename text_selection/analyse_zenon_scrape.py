@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import csv
 import furl
 import json
 import re
@@ -126,8 +127,9 @@ def main(args: argparse.Namespace):
             record_remove_urls_not_matching(record, pattern)
 
     # sort the records by id, to be extra sure, that we get the same order every time this is called
-    # print each line as a csv column (TODO: can be improved using a real csv writer)
+    # print each line as a csv column
     records = sorted(records, key=lambda r: r.get("id"))
+    writer = csv.writer(sys.stdout, delimiter=",", quoting=csv.QUOTE_ALL)
     for record in records:
         to_print = []
         if args.print_id:
@@ -136,8 +138,9 @@ def main(args: argparse.Namespace):
             to_print.append(record.get("urls")[0].get("url") if any(record.get("urls")) else "")
         if args.print_pub_date:
             to_print.append(earliest_year(record.get("publicationDates", [])))
-        print("\t".join(to_print))
-
+        if args.print_languages:
+            to_print.append("|".join(record.get("languages", [])))
+        writer.writerow(to_print)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -155,5 +158,6 @@ if __name__ == '__main__':
     parser.add_argument("--print-url", action="store_true", help="Print the first of each urls for the selected records. (Ignores other urls present on the records if --select-url is given.)")
     parser.add_argument("--print-pub-date", action="store_true", help="Print the earliest publication year for each of the selected records.")
     parser.add_argument("--print-id", action="store_true", help="Print the selected records' ids")
+    parser.add_argument("--print-languages", action="store_true", help="Print the selected records' languages")
 
     main(parser.parse_args())
