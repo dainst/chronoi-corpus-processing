@@ -6,3 +6,7 @@
 
 # Ignore the checksum file used by the heideltime container
 heideltime/.temponym-files-checksum
+
+# python-specific
+__pycache__/
+*.py[cod]
