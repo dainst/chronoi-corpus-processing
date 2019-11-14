@@ -30,12 +30,12 @@ def main(input_dir: str, output_dir: str, args: argparse.Namespace):
     input_files.sort()
     for path in input_files:
 
-        extractor = TextExtractor.create_by_file_ext(path)
         scheme = FileScheme(path, output_dir=output_dir)
 
         scheme.add_step(1, "extracted_texts")
         out_path = scheme.path(1)
         if not scheme.file_exists(out_path):
+            extractor = TextExtractor.create_by_file_ext(path)
             extractor.extract(path, out_path)
 
         scheme.add_step(2, "manual_cleaning")
@@ -100,6 +100,7 @@ def main(input_dir: str, output_dir: str, args: argparse.Namespace):
         scheme.add_step(42, "separate_by_language")
         path_from_last_step = out_path
         language_dir = os.path.join(scheme.dirname(42), language_code)
+        os.makedirs(language_dir, exist_ok=True)
         scheme.copy_file(path_from_last_step, language_dir)
 
 
