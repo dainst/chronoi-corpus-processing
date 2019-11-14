@@ -78,7 +78,7 @@ class TextExtractor:
         _, ext = os.path.splitext(path)
         if ext in [".pdf", ".PDF"]:
             return cls(cls.Strategy.PDF_PdfMiner)
-        elif ext in [".xml", ".XML"]:
+        elif ext in [".xml", ".XML", ".html", ".HTML", ".htm", ".HTM"]:
             return cls(cls.Strategy.XML_BeautifulSoup)
         elif ext in [".txt", ".TXT"]:
             return cls(cls.Strategy.TXT_Copy)
