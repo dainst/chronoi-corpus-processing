@@ -1,8 +1,14 @@
 
-<!ELEMENT TimeML ( #PCDATA | TIMEX3 | TIMEX3INTERVAL | temponym-fn )* >
+<!ELEMENT TimeML (sentence | annotation-window | literature )* >
+
+<!ELEMENT annotation-window (sentence | literature )* >
+
+<!ELEMENT sentence ( #PCDATA | TIMEX3 | TIMEX3INTERVAL | temponym-fn | temponym | temponym-phrase | dne | literature )* >
+<!ATTLIST sentence no CDATA #REQUIRED >
 
 <!ELEMENT TIMEX3 ( #PCDATA ) >
-<!ATTLIST TIMEX3 tid ID #REQUIRED >
+<!-- We intentionally removed the ID for ease during the tagging process -->
+<!-- <!ATTLIST TIMEX3 tid ID #REQUIRED >  -->
 <!ATTLIST TIMEX3 type ( DATE | DURATION | SET | TIME | TEMPONYM ) #REQUIRED >
 <!ATTLIST TIMEX3 value CDATA #REQUIRED >
 <!ATTLIST TIMEX3 anchorTimeID IDREF #IMPLIED >
@@ -16,29 +22,31 @@
 <!ATTLIST TIMEX3 valueFromFunction IDREF #IMPLIED >
 <!ATTLIST TIMEX3 comment CDATA #IMPLIED >
 
+<!--  This marks the special case that a regular time expression is used, but following a non-standard-calendar -->
+<!ATTLIST TIMEX3 ancient-calendar ( true ) #IMPLIED >
+
 <!ELEMENT TIMEX3INTERVAL ( #PCDATA | TIMEX3 )* >
 <!ATTLIST TIMEX3INTERVAL earliestBegin CDATA #IMPLIED >
 <!ATTLIST TIMEX3INTERVAL latestBegin CDATA #IMPLIED >
 <!ATTLIST TIMEX3INTERVAL earliestEnd CDATA #IMPLIED >
 <!ATTLIST TIMEX3INTERVAL latestEnd CDATA #IMPLIED >
 
-<!-- Added values for correction -->
-
-<!ATTLIST TIMEX3 check ( true-positive | false-positive | false-negative | false-normalized ) #REQUIRED >
+<!-- These were used during the pilot corpus correction
+<!ATTLIST TIMEX3 check ( true-positive | false-positive | false-negative | false-normalized ) #REQUIRED > 
 <!ATTLIST TIMEX3 exploration-time ( true ) #IMPLIED >
 <!ATTLIST TIMEX3 literature-time ( true ) #IMPLIED >
 
 <!ELEMENT temponym-fn ( #PCDATA ) >
 <!ATTLIST temponym-fn type ( period | people | dynasty | reign | person | birth | death | ancient-calendar | level | language | incisive-event | culture | war | invention | building ) #REQUIRED >
 
-<!-- Version 1.0 of the annotation scheme for temponyms and dateable entities -->
+-->
 
 <!-- 
     The attributes for the temponym type follow the chronontology data model. See e.g.:
     https://chronontology.dainst.org/info/about
 -->
-<!ELEMENT TEMPONYM ( #PCDATA ) >
-<!ATTLIST TEMPONYM type (
+<!ELEMENT temponym ( #PCDATA | dne )* >
+<!ATTLIST temponym type (
     not-specified
     | geo
         | geo-age | geo-eon | geo-epoch | geo-era | geo-period | geo-supereon
@@ -51,16 +59,31 @@
         | mc-printmaking | mc-rock-art | mc-sculpture | mc-stone-tools | mc-textile | mc-wall-painting
 ) #REQUIRED >
 
+<!-- 
+    The smallest nominal phrase surrounding the temponym. If the temponym itself is a complete nominal
+    phrase, choose the next bigger one.
+ -->
+<!ELEMENT temponym-phrase ( #PCDATA | temponym | dne )* >
+
+
 <!--
-    DNEs are "Dateable Named Entities"
-    Note: Presumably every named entity can potentially be given a date. These are
-    different from temponyms in that they occur in a syntactical context that cannot be occupied
-    by a time expression (there exists no substitution with a regular time expression that would
-    constitute a well-formed expression).
-    We include the basic named entity types of events, persons and locations.
+    Dateable Named Entities
+    Note: Presumably every named entity can potentially be given a date. This comprises
+          everything but temponyms and timexes.
+    Note: A "person-group" can be a single person if it is given by an expression of belonging to
+          that group, e.g. "un romain"
 -->
-<!ELEMENT DNE ( #PCDATA ) >
-<!ATTLIST DNE type (event | person | location | other) #REQUIRED >
+<!ELEMENT dne ( #PCDATA | dne | temponym | temponym-phrase )* >
+<!ATTLIST dne type (
+    other
+    | building 
+    | event 
+    | language
+    | location
+    | organization 
+    | person
+    | person-group
+) #REQUIRED >
 
 <!--
     We mark occurences of literary references as they generally constitute a different
@@ -71,5 +94,13 @@
     also be included.)
     Literary references should be marked up even if they do not contain a temporal expression.
 -->
-<!ELEMENT LITREF ( #PCDATA ) >
+<!ELEMENT literature ( #PCDATA | sentence | TIMEX3 | TIMEX3INTERVAL | temponym-fn | temponym | temponym-phrase | dne )* >
 
+
+<!-- 
+    Whether the entity or time expression belongs to a topical context (is an object of examination
+    in archaeology) or whether it belongs to a time frame of the exploration of such objects.    
+-->
+<!ATTLIST TIMEX3    temporal-context ( topic | exploration | unsure ) #REQUIRED >
+<!ATTLIST temponym  temporal-context ( topic | exploration | unsure ) #REQUIRED >
+<!ATTLIST dne       temporal-context ( topic | exploration | unsure ) #REQUIRED >

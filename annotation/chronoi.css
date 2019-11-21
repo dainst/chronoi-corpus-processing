@@ -1,0 +1,63 @@
+
+TIMEX3 {
+    background-color: #bdcc76;
+}
+
+temponym {
+    background-color: #76bdcc;
+}
+
+temponym-phrase {
+    background-color: #85d5e5;
+}
+
+dne {
+    background-color: #cc8476;
+}
+
+literature {
+    background-color: #e6ff93;
+}
+
+annotation-window {
+    border-top: 1px dashed black;
+    border-bottom: 1px dashed black;
+    /*margin: 1em 0 1em 0;*/
+}
+
+sentence::before {
+    /* this positions the line number to the left of the text */
+    display: block;
+    position: absolute;
+    left: 0;
+
+    /* position the line number within its boundary */
+    width: 3em;
+    text-align: right;
+    padding-bottom: 100%;
+    padding-right: 1em;
+
+    /* draw a ruler to the right */
+    border-right: 1px solid #ADADAD;
+
+    /* style the line number text */
+    font-size: x-small;
+    user-select: none;
+
+    /* display the line number text given in the attribute "no" */
+    content: attr(no);
+}
+
+sentence {
+    /* prepares the left area for the ::before-element to be positioned */
+    display: block;
+    position: relative;
+    padding-left: 4em;
+
+    /* paragraph spacing */
+    margin-bottom: 0;
+
+    /* style the text */
+    font-family: sans-serif;
+    font-size: small;
+}
