@@ -7,7 +7,8 @@ RUN apt-get -y install \
     ghostscript \
     python3-dev \
     libhunspell-dev \
-    plotutils
+    plotutils \
+    mupdf-tools
 
 # install python dependencies
 RUN pip3 install nltk \

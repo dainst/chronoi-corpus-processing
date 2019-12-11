@@ -13,6 +13,8 @@ class TextExtractionStrategyInterface:
         raise NotImplementedError()
 
 
+# Ghostscript is good at outputting a pdf in a text form like it would appear
+# when rendered, the whitespace imitating page borders etc.
 class PdfGhostscriptTextExtractionStrategy(TextExtractionStrategyInterface):
 
     PARAMS = [
@@ -27,11 +29,22 @@ class PdfGhostscriptTextExtractionStrategy(TextExtractionStrategyInterface):
         params = self.PARAMS + [output_file_param, input_path]
         subprocess.call(params)
 
-
+# PDFMiner is a PDF extractor with reasonably good text composition
+# It is also able to preserve page delimiters.
+# PdfMiner has good python bindings, but we call it in a subprocess for
+# simplicity.
 class PdfMinerTextExtractionStrategy(TextExtractionStrategyInterface):
 
     def extract(self, input_path, output_path):
         params = ["pdf2txt.py", "-o", output_path, input_path]
+        subprocess.call(params)
+
+# MuPDF's mutool command is exceptionally fast and does very good text
+# composition.
+class PdfMutoolTextExtractionStrategy(TextExtractionStrategyInterface):
+
+    def extract(self, input_path, output_path):
+        params = [ "mutool", "convert", "-F", "text", "-o", output_path, input_path]
         subprocess.call(params)
 
 
@@ -55,6 +68,7 @@ class TextExtractor:
     class Strategy(Enum):
         PDF_Ghostscript = PdfGhostscriptTextExtractionStrategy
         PDF_PdfMiner = PdfMinerTextExtractionStrategy
+        PDF_PdfMutool = PdfMutoolTextExtractionStrategy
         XML_BeautifulSoup = XMLBeautifulsoupTextExtractionStrategy
         TXT_Copy = TextFileCopyStrategy
 
@@ -77,7 +91,7 @@ class TextExtractor:
     def create_by_file_ext(cls, path: str):
         _, ext = os.path.splitext(path)
         if ext in [".pdf", ".PDF"]:
-            return cls(cls.Strategy.PDF_PdfMiner)
+            return cls(cls.Strategy.PDF_PdfMutool)
         elif ext in [".xml", ".XML", ".html", ".HTML", ".htm", ".HTM"]:
             return cls(cls.Strategy.XML_BeautifulSoup)
         elif ext in [".txt", ".TXT"]:
