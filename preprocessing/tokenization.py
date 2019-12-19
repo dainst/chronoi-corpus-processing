@@ -10,6 +10,7 @@ abbreviations = [
     "jahresh", "beibl", "s.o", "s.d", "tab", "reg", "real-encyclop", "zeitschr",
     "griech", "brit", "mus", "cat", "corr", "bull", "hell", "mitt", "cos", "mitt",
     "anc", "berl", "sitzungsber", "epigr", "diz", "chr", "add", "art", "ivn", "nob",
+    "abh",
     # from english texts
     "i.e", "tac", "ann", "suet", "al", "ed", "nos", "no", "ch", "chs", "cf",
     "e.g", "sp", "spp", "suppl", "etal", "cm", "fig", "figs", "vol",
@@ -20,11 +21,11 @@ abbreviations = [
     "sq", "soph", "ocd", "extr", "imp", "cons", "bockh", "ss", "pl", "fea",
     "epist", "sig", "proleg", "prolegg", "anastas", "cap", "eloq", "lett", "pausan",
     "not", # may interfere with english texts?
-    "lond", "thes", "mon", "steph", "byz",
+    "lond", "thes", "mon", "steph", "byz", "diam", "largh", "vd",
     # from french texts
-    "inv", "dinv", "d'inv", "pi", "palm", "op",
+    "inv", "dinv", "d'inv", "pi", "palm", "op", "av", "j.c",
     # from spanish texts
-    "pp",
+    "pp", "dr",
 ]
 
 # TODO: We could integrate abbreviations from "Der neue Pauly" and "Année Philologique here
