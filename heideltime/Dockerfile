@@ -35,6 +35,9 @@ RUN wget https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/french.pa
 RUN wget https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/italian.par.gz
 RUN wget https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/spanish.par.gz
 RUN sh install-tagger.sh
+RUN chmod 755 /srv/app/treetagger/cmd
+RUN chmod 755 /srv/app/treetagger/lib
+RUN chmod 644 /srv/app/treetagger/lib/*
 
 # Clone heideltime itself and set up the location of the tagger in a new config file
 WORKDIR /srv/app
