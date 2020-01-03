@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<serialized version="21.1" xml:space="preserve">
+	<serializableOrderedMap>
+		<entry>
+			<String>code-templates</String>
+			<codeTemplateItem-array>
+				<codeTemplateItem>
+					<field name="contentType">
+						<String>text/any</String>
+					</field>
+					<field name="unparsedInsertString">
+						<String>&lt;literature>${selection}&lt;/literature></String>
+					</field>
+					<field name="descriptionString">
+						<String>Surround with literature tags</String>
+					</field>
+					<field name="renderString">
+						<String>CHRONOI-literature</String>
+					</field>
+					<field name="enabled">
+						<Boolean>true</Boolean>
+					</field>
+					<field name="accelerator">
+						<String>ctrl 3</String>
+					</field>
+				</codeTemplateItem>
+				<codeTemplateItem>
+					<field name="contentType">
+						<String>text/xml</String>
+					</field>
+					<field name="unparsedInsertString">
+						<String>&lt;dne type="" temporal-context="">${selection}${caret}&lt;/dne></String>
+					</field>
+					<field name="descriptionString">
+						<String>Surround with tag for a dne</String>
+					</field>
+					<field name="renderString">
+						<String>CHRONOI-dne-general</String>
+					</field>
+					<field name="enabled">
+						<Boolean>true</Boolean>
+					</field>
+					<field name="accelerator">
+						<String>ctrl 0</String>
+					</field>
+				</codeTemplateItem>
+				<codeTemplateItem>
+					<field name="contentType">
+						<String>text/xml</String>
+					</field>
+					<field name="unparsedInsertString">
+						<String>&lt;dne type="location" temporal-context="exploration">${selection}${caret}&lt;/dne></String>
+					</field>
+					<field name="descriptionString">
+						<String>Surround with tag for a modern location</String>
+					</field>
+					<field name="renderString">
+						<String>CHRONOI-loc-expl</String>
+					</field>
+					<field name="enabled">
+						<Boolean>true</Boolean>
+					</field>
+					<field name="accelerator">
+						<String>ctrl 1</String>
+					</field>
+				</codeTemplateItem>
+				<codeTemplateItem>
+					<field name="contentType">
+						<String>text/xml</String>
+					</field>
+					<field name="unparsedInsertString">
+						<String>&lt;dne type="location" temporal-context="topic">${selection}${caret}&lt;/dne></String>
+					</field>
+					<field name="descriptionString">
+						<String>Surround with tag for a temporally topical location</String>
+					</field>
+					<field name="renderString">
+						<String>CHRONOI-loc-topic</String>
+					</field>
+					<field name="enabled">
+						<Boolean>true</Boolean>
+					</field>
+					<field name="accelerator">
+						<String>ctrl 8</String>
+					</field>
+				</codeTemplateItem>
+				<codeTemplateItem>
+					<field name="contentType">
+						<String>text/xml</String>
+					</field>
+					<field name="unparsedInsertString">
+						<String>&lt;dne type="person" temporal-context="exploration">${selection}${caret}&lt;/dne></String>
+					</field>
+					<field name="descriptionString">
+						<String>Surround with tag for a modern person</String>
+					</field>
+					<field name="renderString">
+						<String>CHRONOI-person-expl</String>
+					</field>
+					<field name="enabled">
+						<Boolean>true</Boolean>
+					</field>
+					<field name="accelerator">
+						<String>ctrl 2</String>
+					</field>
+				</codeTemplateItem>
+				<codeTemplateItem>
+					<field name="contentType">
+						<String>text/xml</String>
+					</field>
+					<field name="unparsedInsertString">
+						<String>&lt;temponym temporal-context="topic">${selection}${caret}&lt;/temponym></String>
+					</field>
+					<field name="descriptionString">
+						<String>Surround with tag for a temporally topical temponym</String>
+					</field>
+					<field name="renderString">
+						<String>CHRONOI-temponym-topic</String>
+					</field>
+					<field name="enabled">
+						<Boolean>true</Boolean>
+					</field>
+					<field name="accelerator">
+						<String>ctrl 7</String>
+					</field>
+				</codeTemplateItem>
+				<codeTemplateItem>
+					<field name="contentType">
+						<String>text/xml</String>
+					</field>
+					<field name="unparsedInsertString">
+						<String>&lt;TIMEX3 type="DATE" value="${ask('value?', generic, '${selection}')}" temporal-context="exploration">${selection}${caret}&lt;/TIMEX3></String>
+					</field>
+					<field name="descriptionString">
+						<String>Surround with timex3 date tag (exploration context)</String>
+					</field>
+					<field name="renderString">
+						<String>CHRONOI-timex3-expl</String>
+					</field>
+					<field name="enabled">
+						<Boolean>true</Boolean>
+					</field>
+					<field name="accelerator">
+						<String>ctrl 5</String>
+					</field>
+				</codeTemplateItem>
+				<codeTemplateItem>
+					<field name="contentType">
+						<String>text/xml</String>
+					</field>
+					<field name="unparsedInsertString">
+						<String>&lt;TIMEX3 type="DATE" value="${ask('value?', generic, 'BC${selection}')}" temporal-context="topic">${selection}${caret}&lt;/TIMEX3></String>
+					</field>
+					<field name="descriptionString">
+						<String>Surround with timex3 date tag (topica context)</String>
+					</field>
+					<field name="renderString">
+						<String>CHRONOI-timex3-topic</String>
+					</field>
+					<field name="enabled">
+						<Boolean>true</Boolean>
+					</field>
+					<field name="accelerator">
+						<String>ctrl 6</String>
+					</field>
+				</codeTemplateItem>
+			</codeTemplateItem-array>
+		</entry>
+	</serializableOrderedMap>
+</serialized>
