@@ -25,6 +25,10 @@ annotation-window {
     /*margin: 1em 0 1em 0;*/
 }
 
+[temporal-context='topic'] {
+    border-bottom: 2px solid black;
+}
+
 sentence::before {
     /* this positions the line number to the left of the text */
     display: block;
