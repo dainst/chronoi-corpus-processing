@@ -15,7 +15,7 @@ services:
   heideltime:
     build: ./heideltime
     container_name: "heideltime"
-    image: heideltime
+    image: dainst/chronoi-heideltime:latest
     volumes:
       - ./heideltime:/srv/app/scripts:rw
       - ${OUTPUT_DIR}:/srv/output:rw
