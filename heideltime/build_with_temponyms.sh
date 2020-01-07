@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# read the relevant directories from the command line
+# read the relevant directory from the command line, this should have been populated
+# by the "chronontology_temponyms_export.py"-Skript
 dir_temponym_files="${1}"
+
+# these are expected to be in place in the container
 dir_heideltime_app=/srv/app/heideltime
 config_file=/srv/app/config.props
 
@@ -21,7 +24,7 @@ fi
 
 echo "Files changed. Rebuilding Heideltime."
 
-# Fail before the new checksum is written if anything goes wrong here from here on
+# Fail before the new checksum is written if anything goes wrong from here on
 set -e
 
 # copy the temponym resource files
@@ -35,29 +38,18 @@ cp_resource "${dir_temponym_files}/en_repattern.txt" "english" "repattern" "re"
 cp_resource "${dir_temponym_files}/de_norm.txt" "german"  "normalization" "norm"
 cp_resource "${dir_temponym_files}/en_norm.txt" "english" "normalization" "norm"
 
-# copy the resource files that were automatically translated from the chronontology export
-cp_resource "${dir_temponym_files}/es_auto_repattern.txt" "spanish" "repattern" "re"
-cp_resource "${dir_temponym_files}/fr_auto_repattern.txt" "french"  "repattern" "re"
-cp_resource "${dir_temponym_files}/it_auto_repattern.txt" "italian" "repattern" "re"
-cp_resource "${dir_temponym_files}/es_auto_norm.txt" "spanish" "normalization" "norm"
-cp_resource "${dir_temponym_files}/fr_auto_norm.txt" "french"  "normalization" "norm"
-cp_resource "${dir_temponym_files}/it_auto_norm.txt" "italian" "normalization" "norm"
-
 # put temponym rules into place (same rule for both languages)
 write_rule_if_not_exists() {
+    # The rule uses heideltime's regex-syntax to link to the relevant pattern and normalization functions
     local rule='RULENAME="temponym_chronontology_1",EXTRACTION="%reTemponymChronontology",NORM_VALUE="%normTemponymChronontology(group(1))"'
     local file=${1}
+    # Write the rule only if grep doesn't find its name
     grep -q "temponym_chronontology_1" "$file" || echo "$rule" >> "$file"
 }
 
 # write rules to include the temponym files for the chronontology export
 write_rule_if_not_exists "${dir_heideltime_app}/resources/english/rules/resources_rules_temponymrules.txt"
 write_rule_if_not_exists "${dir_heideltime_app}/resources/german/rules/resources_rules_temponymrules.txt"
-
-# write rules to include the temponym files automatically translated from the chronontology export
-write_rule_if_not_exists "${dir_heideltime_app}/resources/spanish/rules/resources_rules_temponymrules.txt"
-write_rule_if_not_exists "${dir_heideltime_app}/resources/french/rules/resources_rules_temponymrules.txt"
-write_rule_if_not_exists "${dir_heideltime_app}/resources/italian/rules/resources_rules_temponymrules.txt"
 
 # run the maven build
 mvn -f "${dir_heideltime_app}/pom.xml" clean package
