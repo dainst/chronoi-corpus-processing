@@ -22,7 +22,7 @@ dir_input="/srv/output/042_separate_by_language"
 docker exec -it chronoi-pilot python3 preprocessing.py
 
 # create temponym files for heideltime
-docker exec -it chronoi-pilot python3 chronontology_export.py
+docker exec -it chronoi-pilot python3 heideltime/chronontology_temponyms_export.py
 
 # rebuild the heideltime jar if any of the temponym files changed
 docker exec -it heideltime /srv/app/scripts/build_with_temponyms.sh /srv/output/heideltime_temponym_files

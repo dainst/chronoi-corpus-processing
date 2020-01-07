@@ -12,7 +12,7 @@ dir_annotations="/srv/output/A04_annotated_narrative"
 dir_eval="/srv/output/A05_annotated_narrative_eval"
 
 # rebuild the temponyms and heideltime jar if any of the temponym files changed
-# docker exec -it chronoi-pilot python3 chronontology_export.py
+# docker exec -it chronoi-pilot python3 heideltime/chronontology_temponyms_export.py
 docker exec -it heideltime /srv/app/scripts/build_with_temponyms.sh /srv/output/heideltime_temponym_files
 
 # Run the annotations.

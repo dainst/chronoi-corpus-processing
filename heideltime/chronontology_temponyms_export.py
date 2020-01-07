@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import argparse
 import json
 import os
 import icu
@@ -18,8 +19,8 @@ def sorted_strings(strings, locale=None):
     return sorted(strings, key=collator.getSortKey)
 
 
-def write_file_with_permissions(path: str, content: str, chmod_mode=0o776, open_mode='w'):
-    with open(path, open_mode) as f:
+def write_file_with_permissions(path: str, content: str, chmod_mode=0o776, open_mode='w', encoding='utf-8'):
+    with open(path, open_mode, encoding=encoding) as f:
         f.write(content)
     os.chmod(path, chmod_mode)
 
@@ -186,7 +187,7 @@ class HeidelTimeWriter:
 def do_chronontology_export(export_file, output_directory):
 
     # read the export file
-    with open(export_file) as file:
+    with open(export_file, encoding="utf-8") as file:
         response = json.load(file)
 
     assert len(response["results"]) == int(response["total"]), \
@@ -247,10 +248,24 @@ def do_chronontology_export(export_file, output_directory):
 
 
 if __name__ == '__main__':
+    # by default the chronontology dump is expected to be in the same directory as this
+    # script under "resources/chronontology.json"
     script_dir = os.path.dirname(os.path.realpath(__file__))
-    export_file = os.path.join(script_dir, "resources", "chronontology.json")
+    default_chronontology_dump_path = os.path.join(script_dir, "resources", "chronontology.json")
 
-    corpus_out_dir = os.path.realpath(os.environ["OUTPUT_DIR"])
-    out_dir = os.path.join(corpus_out_dir, "heideltime_temponym_files")
+    # by default the output goes into a new directory in the containers output directory
+    corpus_out_dir = os.path.realpath(os.environ.get("OUTPUT_DIR", "."))
+    default_out_dir = os.path.join(corpus_out_dir, "heideltime_temponym_files")
 
-    do_chronontology_export(export_file, out_dir)
+    parser = argparse.ArgumentParser(
+        description="Reads a chronontology json dump and exports temponym definitions (pattern and rule files) for use with heideltime.")
+    parser.add_argument("-i", "--in-file", default=default_chronontology_dump_path,
+        type=str, help="A json export of the chronontology data (defaults to: %(default)s).")
+    parser.add_argument("-o", "--out-dir", default=default_out_dir,
+        type=str, help="The directory to put the generated files into (defaults to: %(default)s).")
+    args = parser.parse_args()
+
+    print("Input file:", args.in_file)
+    print("Output dir:", args.out_dir)
+
+    do_chronontology_export(args.in_file, args.out_dir)

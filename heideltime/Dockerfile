@@ -4,13 +4,8 @@
 #  - https://github.com/HeidelTime/heideltime
 #  - https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger
 #
-# on a Ubuntu 18.04, and builds/configures them together.
-#
-# Before using this, be sure to review the TreeTagger and Heideltime Licenses,
-# as they are not the most permissive ones.
-#
-#  - https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/Tagger-Licence
-#  - https://github.com/HeidelTime/heideltime/blob/master/COPYING
+# on Ubuntu 18.04, builds/configures them together and enables support
+# for temponyms extracted from a chronontology dump.
 ##
 
 FROM ubuntu:18.04
@@ -20,7 +15,12 @@ RUN apt-get update && apt-get -y install \
     openjdk-8-jdk \
     git \
     maven \
-    wget
+    wget \
+    libicu-dev \
+    python3 \
+    python3-pip
+
+RUN pip3 install PyICU
 
 # Download and install the tree tagger
 # NOTE: Downloads parameter files for the tree tagger for only some langauges, more language options at:
@@ -42,8 +42,15 @@ RUN chmod 644 /srv/app/treetagger/lib/*
 # Clone heideltime itself and set up the location of the tagger in a new config file
 WORKDIR /srv/app
 RUN git clone https://github.com/HeidelTime/heideltime.git
-RUN cp heideltime/conf/config.props .
+RUN mv heideltime/conf/config.props .
 RUN sed -i 's|^treeTaggerHome =.*$|treeTaggerHome = /srv/app/treetagger|g' config.props
+
+# Prepare temponym files tagging and enable temponym tagging in the config
+ADD . /srv/app/scripts
+WORKDIR /srv/app/scripts
+RUN python3 chronontology_temponyms_export.py -i resources/chronontology.json -o /tmp/temponyms
+RUN ./prepare_heideltime_temponym_files.sh /tmp/temponyms
+RUN sed -i 's|^considerTemponym =.*$|considerTemponym = true|g' /srv/app/config.props
 
 # Build heideltime
 # NOTE: This modifies the pom.xml to include dependencies in the standalone jar.
@@ -56,10 +63,6 @@ RUN mvn clean package
 RUN echo '#!/bin/bash \n\
 java -jar /srv/app/heideltime/target/de.unihd.dbs.heideltime.standalone.jar -c /srv/app/config.props "$@" \n\
 ' > /bin/heideltime && chmod a+x /bin/heideltime
-
-# Do a test annotation
-RUN echo "Did we install heideltime today?" > /tmp/test.txt
-RUN heideltime -l english -t scientific -dct 1970-01-01 /tmp/test.txt && rm /tmp/test.txt
 
 # keep the container running when started
 CMD /bin/sleep infinity
