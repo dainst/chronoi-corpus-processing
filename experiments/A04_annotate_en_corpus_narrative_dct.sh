@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 # Require the shared functions used in multiple experiments.
-source "$(dirname $0)/util.sh"
+# shellcheck source=./util.sh
+source "$(dirname "$0")/util.sh"
 
 #input direcories
 dir_input="/srv/output/042_separate_by_language/en"
@@ -10,10 +11,6 @@ dir_standard="/srv/output/A02_manual_correction/en"
 # output directories
 dir_annotations="/srv/output/A04_annotated_narrative"
 dir_eval="/srv/output/A05_annotated_narrative_eval"
-
-# rebuild the temponyms and heideltime jar if any of the temponym files changed
-# docker exec -it chronoi-pilot python3 heideltime/chronontology_temponyms_export.py
-docker exec -it heideltime /srv/app/scripts/build_with_temponyms.sh /srv/output/heideltime_temponym_files
 
 # Run the annotations.
 annotate "${dir_input}/02_Smith2018.txt"                 "en" "english" 2018-01-01 "narrative" "$dir_annotations"

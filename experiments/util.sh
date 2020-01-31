@@ -10,10 +10,11 @@ annotate() {
     local dct="$4"
     local text_type="$5"
     local target_folder="$6"
-    local annotated_file="${target_folder}/${dir_language}/$(basename -stxt $input_file)xml"
+    local annotated_file
+    annotated_file="${target_folder}/${dir_language}/$(basename -stxt "$input_file")xml"
 
-    docker exec heideltime mkdir -p $(dirname "$annotated_file")
-    if ! $(docker exec heideltime test -f "$annotated_file"); then
+    docker exec heideltime mkdir -p "$(dirname "$annotated_file")"
+    if ! docker exec heideltime test -f "$annotated_file"; then
         docker exec -t heideltime /srv/app/scripts/temponym_annotate.sh "$language" "$dct" "$text_type" "$input_file" "$annotated_file"
     else
         echo "Annotation already present: ${annotated_file}"
