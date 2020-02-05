@@ -17,7 +17,7 @@ services:
     container_name: "heideltime"
     image: dainst/chronoi-heideltime:latest
     volumes:
-      - ./heideltime:/srv/app/scripts:rw
+      - ./heideltime/scripts:/srv/app/scripts:rw
       - ${OUTPUT_DIR}:/srv/output:rw
 
   tempeval3:

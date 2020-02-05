@@ -40,13 +40,13 @@ RUN chmod 755 /srv/app/treetagger/lib
 RUN chmod 644 /srv/app/treetagger/lib/*
 
 # Clone heideltime itself and set up the location of the tagger in a new config file
+ADD ./heideltime /srv/app/heideltime
 WORKDIR /srv/app
-RUN git clone https://github.com/HeidelTime/heideltime.git
 RUN mv heideltime/conf/config.props .
 RUN sed -i 's|^treeTaggerHome =.*$|treeTaggerHome = /srv/app/treetagger|g' config.props
 
 # Prepare temponym files tagging and enable temponym tagging in the config
-ADD . /srv/app/scripts
+ADD ./scripts /srv/app/scripts
 WORKDIR /srv/app/scripts
 RUN python3 chronontology_temponyms_export.py -i resources/chronontology.json -o /tmp/temponyms
 RUN ./prepare_heideltime_temponym_files.sh /tmp/temponyms

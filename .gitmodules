@@ -1,0 +1,3 @@
+[submodule "heideltime/heideltime"]
+	path = heideltime/heideltime
+	url = git@github.com:HeidelTime/heideltime.git
