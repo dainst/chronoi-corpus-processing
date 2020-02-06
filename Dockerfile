@@ -2,8 +2,7 @@
 FROM python:3
 
 # install general dependencies
-RUN apt-get update
-RUN apt-get -y install \
+RUN apt-get update && apt-get -y install \
     ghostscript \
     python3-dev \
     libhunspell-dev \
