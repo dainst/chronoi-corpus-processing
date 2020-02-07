@@ -51,7 +51,7 @@ def main(input_dir: str, output_dir: str, args: argparse.Namespace):
         if not scheme.file_exists(out_path):
             done_path = scheme.done_path(2)
             if not scheme.file_exists(done_path):
-                print("WARN:", f"No input file at: '#{done_path}'. Was this file manually cleaned?")
+                print("WARN:", f"No input file at: '{done_path}'. Was this file manually cleaned?")
                 continue
             lines = scheme.read_lines(scheme.done_path(2))
             lines = cleaning.cleanup_whitespace(lines)
