@@ -86,6 +86,8 @@ class TaskEvaluation:
 
     def fn_score(self, weight: float = 1.0) -> float:
         p, r = (self.precision, self.recall)
+        if p == 0 and r == 0:
+            return self.NAN
         return ((1 + weight ** 2) * p * r) / (weight ** 2 * p + r)
 
     @property
