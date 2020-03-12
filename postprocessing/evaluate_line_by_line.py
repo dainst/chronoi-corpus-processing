@@ -9,7 +9,7 @@ import enum
 import glob
 import os.path
 
-from corpus_lines import TagInContext, Document, DocumentLine
+from corpus_reading import TagInContext, Document, DocumentLine
 
 
 class TaskType(enum.Enum):
