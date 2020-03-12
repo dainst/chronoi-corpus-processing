@@ -6,6 +6,7 @@ import bs4
 import os
 import glob
 import re
+import xml.sax.saxutils
 
 
 class Config:
@@ -18,6 +19,7 @@ class Config:
         self.lstrip_lines = True
         self.add_fake_dct = True
         self.strip_attrs = [ "check", "literature-time", "exploration-time" ]
+
 
 
 def tag_matches_definition(elem: bs4.Tag, tag_def: dict) -> bool:
@@ -113,10 +115,8 @@ def wrap_contents_in_new_tag(elem: bs4.Tag, tag_name: str) -> bs4.Tag:
 
 def cleanup_document(doc: bs4.BeautifulSoup, config: Config) -> bs4.BeautifulSoup:
     # cleanup the main document tags
-    timeml_root = doc.findChild("TimeML")
-    for child in timeml_root.children:
-        if type(child) == bs4.Tag:
-            recursively_cleanup_element(child, config)
+    timeml_root = get_root_element(doc)
+    recursively_cleanup_element(timeml_root, config)
 
     # work on the header-like elements adding valid namespace info and removing
     # the doctype if there is one
@@ -132,16 +132,16 @@ def cleanup_document(doc: bs4.BeautifulSoup, config: Config) -> bs4.BeautifulSou
     return doc
 
 
+def get_root_element(doc: bs4.BeautifulSoup):
+    return doc.findChild("TimeML")
+
+
 def trim_whitespace_at_start_of_each_line(text: str):
     return "".join(map(str.lstrip, text.splitlines(keepends=True)))
 
 
-def handle_cleanup(input_path: str, output_path: str, config: Config):
-    # read the original
-    with open(input_path, "r") as input_file:
-        doc = bs4.BeautifulSoup(input_file, "lxml-xml", from_encoding="utf-8")
-
-    # do the cleanup and convert to a utf-8 string
+def handle_cleanup(doc: bs4.BeautifulSoup, config: Config) -> str:
+    # do the cleanup and convert to a (utf-8) string
     doc = cleanup_document(doc, config)
     xml_str = str(doc)
 
@@ -149,9 +149,7 @@ def handle_cleanup(input_path: str, output_path: str, config: Config):
     if config.lstrip_lines:
         xml_str = trim_whitespace_at_start_of_each_line(xml_str)
 
-    # write the new file
-    with open(output_path, "w") as output_file:
-        output_file.write(xml_str)
+    return xml_str
 
 
 def change_temponym_fn_tag_to_timex(tag: bs4.Tag):
@@ -160,8 +158,31 @@ def change_temponym_fn_tag_to_timex(tag: bs4.Tag):
     tag.attrs["type"] = "TEMPONYM"
 
 
+def change_timex3_to_have_lit_attr_if_contained_in_lit_tag(tag: bs4.Tag):
+    lit_parent = tag.find_parent("literature")
+    if (lit_parent is not None):
+        tag.attrs["literature-time"] = "true"
+
+
+def change_timeml_to_only_contain_the_annotation_window_content(tag: bs4.Tag):
+    annotation_window = tag.find("annotation-window")
+    if (annotation_window is not None):
+        tag.contents = annotation_window.contents
+    else:
+        print("ERROR: Expected tag 'annotation-window' to be found!")
+
+
+def change_timex3_tag_to_have_a_tid(tag: bs4.Tag):
+    change_timex3_tag_to_have_a_tid.counter += 1
+    tag.attrs["tid"] = f"t{change_timex3_tag_to_have_a_tid.counter}"
+
+
+change_timex3_tag_to_have_a_tid.counter = 0
+
+
 def build_config(args) -> Config:
     config = Config()
+
     # handle the tag removals
     if not args.keep_intervals:
         config.remove_tags.append({"tag": "TIMEX3INTERVAL"})
@@ -184,14 +205,77 @@ def build_config(args) -> Config:
     return config
 
 
+def build_config_for_tagged_corpus() -> Config:
+    config = Config()
+
+    # remove unneccessary stuff from the standard config
+    config.remove_tags = []
+    config.strip_attrs = []
+    config.add_fake_dct = False
+
+    # add an id to <TIMEX3> tags
+    config.replace_tags.append({ "tag": "TIMEX3", "callback": change_timex3_tag_to_have_a_tid})
+
+    # remove <sentence>, <annotation-window> and <literature> tags
+    config.remove_tags = [
+        { "tag": "sentence" },
+        { "tag": "literature" },
+        { "tag": "dne" },
+        { "tag": "temponym-phrase" },
+        { "tag": "temponym" }
+    ]
+
+    # remove the ancient-calendar-attribute from <TIMEX3> tags
+    config.strip_attrs.append("ancient-calendar")
+
+    # set the literature-time attribute on <TIMEX3> if they are contained
+    # in a <literature />-Tag
+    # NOTE: ltierature-tags are not removed at this point, because tags higher up
+    # in the hierarchy are handled later than lower ones.
+    config.replace_tags.append(
+        { "tag": "TIMEX3", "callback": change_timex3_to_have_lit_attr_if_contained_in_lit_tag }
+    )
+
+    # keep only the contents below the annotation window
+    config.replace_tags.append((
+        { "tag": "TimeML", "callback": change_timeml_to_only_contain_the_annotation_window_content }
+    ))
+
+
+    return config
+
+
 def main(args):
-    config = build_config(args)
+    if args.a06tagged:
+        config = build_config_for_tagged_corpus()
+    elif args.text_only:
+        config = None
+    else:
+        config = build_config(args)
 
     os.makedirs(args.output_dir, exist_ok=True)
     for path in glob.glob(args.input_path):
+        # determine the output path
         new_path = os.path.join(args.output_dir, os.path.basename(path))
         new_path = new_path.replace("_DONE", "")
-        handle_cleanup(path, new_path, config)
+
+        # read the original
+        with open(path, "r") as input_file:
+            doc = bs4.BeautifulSoup(input_file, "lxml-xml", from_encoding="utf-8")
+
+        if (args.text_only):
+            # "text-only" escapes xml characters to preserve the text as contained
+            # in the document exactly
+            output = get_root_element(doc).text
+            output = xml.sax.saxutils.escape(output)
+            new_path = os.path.splitext(new_path)[0] + ".txt"
+        else:
+            output = handle_cleanup(doc, config)
+
+        # write the new file
+        with open(new_path, "w") as output_file:
+            output_file.write(output)
+
 
 
 if __name__ == "__main__":
@@ -206,5 +290,7 @@ if __name__ == "__main__":
     parser.add_argument("--only-temponyms", action="store_true", help="If present, keep all temponym-Tags, remove others and convert <temponym-fn />-tags")
     parser.add_argument("--no-lstrip-lines", action="store_true", help="If present, do not clean whitespace starting each line.")
     parser.add_argument("--no-fake-dct", action="store_true", help="If present, do not add a fake DCT tag.")
+    parser.add_argument("--a06tagged", action="store_true", help="Ignore all other options and use the config for the tagged corpus.")
+    parser.add_argument("--text-only", action="store_true", help="Ignore all other options and only ouput the text without any xml nodes.")
 
     main(parser.parse_args())
