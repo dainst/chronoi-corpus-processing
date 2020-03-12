@@ -8,9 +8,9 @@ abbreviations = [
     # from german texts
     "s", "jh", "jhs", "ca", "abb", "vs", "a", "o", "n", "z", "p", "x", "c",
     "jahresh", "beibl", "s.o", "s.d", "tab", "reg", "real-encyclop", "zeitschr",
-    "griech", "brit", "mus", "cat", "corr", "bull", "hell", "mitt", "cos", "mitt",
+    "griech", "brit", "mus", "cat", "corr", "bull", "hell", "cos", "mitt",
     "anc", "berl", "sitzungsber", "epigr", "diz", "chr", "add", "art", "ivn", "nob",
-    "abh",
+    "abh", "kat", "taf", "anm", "rd", "ih", "n.chr", "hrsg", "ti", "mr",
     # from english texts
     "i.e", "tac", "ann", "suet", "al", "ed", "nos", "no", "ch", "chs", "cf",
     "e.g", "sp", "spp", "suppl", "etal", "cm", "fig", "figs", "vol",
@@ -18,14 +18,29 @@ abbreviations = [
     "lib", "tom", "ep", "tsv", "eral", "cav", "iion", "cb", "fr", "oxon", "mich",
     "geo", "aug", "rcv", "esq", "tav", "num", "avv", "pl", "fol", "pag", "pagg",
     "cit", "bibl", "des", "ir", "lin", "inscr", "ap", "inst", "instit", "archaeol",
-    "sq", "soph", "ocd", "extr", "imp", "cons", "bockh", "ss", "pl", "fea",
+    "sq", "soph", "ocd", "extr", "imp", "cons", "bockh", "ss", "fea",
     "epist", "sig", "proleg", "prolegg", "anastas", "cap", "eloq", "lett", "pausan",
-    "not", # may interfere with english texts?
-    "lond", "thes", "mon", "steph", "byz", "diam", "largh", "vd",
+    "sec", "tor", "p.tor", "not", "lond", "thes", "mon", "steph", "byz", "diam",
+    "largh", "vd", "ms", "mss", "pit", "p.ch", "cr", "alt", "rt", "lu", "nn", "pap",
+    "urk", "ecc", "br", "p.br", "fragm", "pom", "taw", "spess", "cfr",
+    "naz", "c.f", "cn", "bull", "es", "sex", "figg", "ant", "mus",
+    "loc", "civ", "nav", "risp", "col", "par", "cil", "anz", "serv",
+    "or", "lit.-zeit", "trav", "ted", "hist", "aeg", "relig", "se", "din", "eg",
+    "chron", "preuss", "ak", "deut", "phil", "-hist", "kh", "soc",
+    "tip", "met", "diss", "pun", "sopr"
     # from french texts
-    "inv", "dinv", "d'inv", "pi", "palm", "op", "av", "j.c",
+    "inv", "dinv", "d'inv", "pi", "palm", "op", "av", "j.c", "id", "ibid", "chap",
+    "georg", "armén", "syr", "abchas", "geogr", "mitteil", "bd", "sqq", "čerk", "arm",
+    "hérod", "gen", "éd", "géorg", "géogr", "anon", "longit", "latit", "pls", "co",
+    "rée", "fac-sim", "impr", "st", "éch", "th", "vi", "reimpr", "pli", "ch", "ph",
+    "gh", "j.a.w", "prof", "ch", "vv", "hoc", "okr", "fg", "doc", "è", "op.cit", "cot",
     # from spanish texts
-    "pp", "dr",
+    "pp", "dr", "rev", "er", "congr", "int", "arch", "chret", "pág", "págs",
+    "lám", "láms", "ob", "cong", "nac", "ill", "torn", "introd", "edic", "est", "il",
+    "edit", "long", "mm", "lín", "ej", "n.w", "n.e", "s.e", "s.w", "lat", "a.p",
+    "l.v",
+    # handle some cases resulting from bad ocr
+    ",", "/", "η", "p1"
 ]
 
 # TODO: We could integrate abbreviations from "Der neue Pauly" and "Année Philologique here
@@ -33,9 +48,12 @@ abbreviations = [
 # https://www.uni-trier.de/fileadmin/fb3/prof/GES/AG1/Abk%C3%BCrzungen_Zeitschriften.pdf
 # https://guides.lib.berkeley.edu/c.php?g=381579&p=2585381
 
-
 # single letters are often used to abbreviate first names
 abc = string.ascii_lowercase
+
+# two-letter abbreviations of firstnames are also excepted, e.g. the "E.F." in E.F. Wallace"
+abc_product = [(a,b) for a in abc for b in abc]
+abc_dot_abc = [f"{a}.{b}" for (a,b) in abc_product]
 
 # to not split sentences on "19. Jahrhundert" etc.
 number_strings = list(map(str, range(1, 999)))
@@ -55,6 +73,7 @@ def sentence_tokenizer(language='english'):
     # add some abbreviations to those that were learned with the model
     tokenizer._params.abbrev_types.update(abbreviations)
     tokenizer._params.abbrev_types.update(abc)
+    tokenizer._params.abbrev_types.update(abc_dot_abc)
     tokenizer._params.abbrev_types.update(number_strings)
     tokenizer._params.abbrev_types.update(page_number_f_strings)
     tokenizer._params.abbrev_types.update(page_number_ff_strings)
