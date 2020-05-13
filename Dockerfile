@@ -23,7 +23,8 @@ RUN pip3 install nltk \
     beautifulsoup4 \
     lxml \
     tablign \
-    csvkit
+    csvkit \
+    pytest
 
 # download tokenization data for nltk
 RUN python3 -c "import nltk; nltk.download('punkt')"

@@ -48,7 +48,7 @@ class DocumentLine:
 
 class Document:
 
-    def __init__(self, path: str, basename: str, is_gold: bool):
+    def __init__(self, path: str, basename: str = "", is_gold: bool = False):
         self.path = path
         self.basename = basename
         self.is_gold = is_gold
