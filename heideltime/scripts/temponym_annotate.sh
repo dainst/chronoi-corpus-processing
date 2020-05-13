@@ -11,4 +11,4 @@ input_file="${4}"
 output_file="${5}"
 
 set -x
-heideltime -l "$language" -it -t "$text_type" -dct "$dct" "$input_file" > "$output_file"
+heideltime -l "$language" -t "$text_type" -dct "$dct" "$input_file" > "$output_file"
