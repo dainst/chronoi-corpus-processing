@@ -241,13 +241,91 @@ def build_config_for_tagged_corpus() -> Config:
         { "tag": "TimeML", "callback": change_timeml_to_only_contain_the_annotation_window_content }
     ))
 
-
     return config
 
 
+def build_config_for_tagged_corpus_without_annotation_window_restriction() -> Config:
+    config = build_config_for_tagged_corpus()
+    config.replace_tags = [o for o in config.replace_tags if o["tag"] != "TimeML"]
+    return config
+
+
+def build_config_for_annotation_window_adjust() -> Config:
+    config = Config()
+
+    config.remove_tags = []
+    config.strip_attrs = []
+    config.add_fake_dct = False
+
+    config.replace_tags.append((
+        {"tag": "TimeML", "callback": change_timeml_to_only_contain_the_annotation_window_content}
+    ))
+    return config
+
+
+def build_config_for_pilot_to_corpus_conversion() -> Config:
+    config = Config()
+
+    # false positives are removed as well as tagged intervals
+    config.remove_tags = [
+        {"tag": "TIMEX3", "attrs": {"check": "false-positive"}},
+        {"tag": "TIMEX3INTERVAL"}
+    ]
+    config.lstrip_lines = True
+    config.add_fake_dct = False
+    config.strip_attrs = ["check", "literature-time", "tid"]
+
+    # a function to create the proper tags from temponym-fns
+    def change_temponym_fn_tag_to_temponym_or_dne(tag: bs4.Tag):
+        type_attr = tag.attrs.get("type")
+        if (type_attr in ["period", "dynasty", "reign"]):
+            tag.name = "temponym"
+        else:
+            tag.name = "dne"
+        # we leave the "type" tag intact as a human annotator should look at these anyway
+        # if they do not match exactly
+
+    # a function to create the proper tags from temponym tags
+    def change_temponym_timexes_to_temponym_tags(tag: bs4.Tag):
+        tag.name = "temponym"
+        # clear everything but the exploration-time attr
+        expl_time_val = tag.attrs.pop("exploration-time", None)
+        tag.attrs.clear()
+        tag.attrs["type"] = ""
+        if expl_time_val is not None:
+            tag.attrs["exploration-time"] = expl_time_val
+
+    # handle the "exploration-time" attribute and convert it to the temporal-context attr
+    def change_tags_to_have_temporal_context_attr(tag: bs4.Tag):
+        expl_time = tag.attrs.pop("exploration-time", "false") # NOTE: pop() removes the attr if present
+        lit_time = tag.attrs.pop("literature-time", "false")
+        if expl_time == "true" or lit_time == "true":
+            value = "exploration"
+        else:
+            value = "topic"
+        tag.attrs["temporal-context"] = value
+
+    config.replace_tags = [
+        {"tag": "temponym-fn", "callback": change_temponym_fn_tag_to_temponym_or_dne},
+        {"tag": "TIMEX3", "attrs": {"type": "TEMPONYM"}, "callback": change_temponym_timexes_to_temponym_tags},
+        {"tag": "TIMEX3", "callback": change_tags_to_have_temporal_context_attr},
+        # this is put last, so that <temponym>-tags exist by the time this runs
+        {"tag": "temponym", "callback": change_tags_to_have_temporal_context_attr},
+    ]
+    return config
+
+
+
 def main(args):
+    # test for special configuration flags first
     if args.a06tagged:
         config = build_config_for_tagged_corpus()
+    elif args.a06tagged_no_window:
+        config = build_config_for_tagged_corpus_without_annotation_window_restriction()
+    elif args.pilot_to_corpus:
+        config = build_config_for_pilot_to_corpus_conversion()
+    elif args.annotation_window:
+        config = build_config_for_annotation_window_adjust()
     elif args.text_only:
         config = None
     else:
@@ -291,6 +369,9 @@ if __name__ == "__main__":
     parser.add_argument("--no-lstrip-lines", action="store_true", help="If present, do not clean whitespace starting each line.")
     parser.add_argument("--no-fake-dct", action="store_true", help="If present, do not add a fake DCT tag.")
     parser.add_argument("--a06tagged", action="store_true", help="Ignore all other options and use the config for the tagged corpus.")
+    parser.add_argument("--a06tagged-no-window", action="store_true", help="Ignore all other options and use the config for the tagged corpus but do not heed the annotation window tags.")
+    parser.add_argument("--pilot-to-corpus", action="store_true", help="Ignore all other options and use the config for the pilot conversion.")
+    parser.add_argument("--annotation-window", action="store_true", help="Ignore all other options and only truncate to the <annotation-window/>")
     parser.add_argument("--text-only", action="store_true", help="Ignore all other options and only ouput the text without any xml nodes.")
 
     main(parser.parse_args())
