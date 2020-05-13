@@ -1,0 +1,36 @@
+
+<!-- This is the dtd originally used to create the first english-only pilot corpus -->
+
+<!ELEMENT TimeML ( #PCDATA | TIMEX3 | TIMEX3INTERVAL | temponym-fn)* >
+
+<!ELEMENT TIMEX3 ( #PCDATA ) >
+
+<!ATTLIST TIMEX3 tid ID #REQUIRED >
+<!ATTLIST TIMEX3 type ( DATE | DURATION | SET | TIME | TEMPONYM ) #REQUIRED >
+<!ATTLIST TIMEX3 value CDATA #REQUIRED >
+<!ATTLIST TIMEX3 anchorTimeID IDREF #IMPLIED >
+<!ATTLIST TIMEX3 beginPoint IDREF #IMPLIED >
+<!ATTLIST TIMEX3 endPoint IDREF #IMPLIED >
+<!ATTLIST TIMEX3 freq NMTOKEN #IMPLIED >
+<!ATTLIST TIMEX3 functionInDocument ( CREATION_TIME | EXPIRATION_TIME | MODIFICATION_TIME | PUBLICATION_TIME | RELEASE_TIME | RECEPTION_TIME | NONE ) #IMPLIED >
+<!ATTLIST TIMEX3 mod ( BEFORE | AFTER | ON_OR_BEFORE | ON_OR_AFTER | LESS_THAN | MORE_THAN | EQUAL_OR_LESS | EQUAL_OR_MORE | START | MID | END | APPROX )  #IMPLIED >
+<!ATTLIST TIMEX3 quant CDATA #IMPLIED >
+<!ATTLIST TIMEX3 temporalFunction ( false | true ) #IMPLIED >
+<!ATTLIST TIMEX3 valueFromFunction IDREF #IMPLIED >
+<!ATTLIST TIMEX3 comment CDATA #IMPLIED >
+
+<!--  This marks the special case that a regular time expression is used, but following a non-standard-calendar -->
+<!ATTLIST TIMEX3 ancient-calendar ( true ) #IMPLIED >
+
+<!ELEMENT TIMEX3INTERVAL ( #PCDATA | TIMEX3 )* >
+<!ATTLIST TIMEX3INTERVAL earliestBegin CDATA #IMPLIED >
+<!ATTLIST TIMEX3INTERVAL latestBegin CDATA #IMPLIED >
+<!ATTLIST TIMEX3INTERVAL earliestEnd CDATA #IMPLIED >
+<!ATTLIST TIMEX3INTERVAL latestEnd CDATA #IMPLIED >
+
+<!ATTLIST TIMEX3 check ( true-positive | false-positive | false-negative | false-normalized ) #REQUIRED > 
+<!ATTLIST TIMEX3 exploration-time ( true ) #IMPLIED >
+<!ATTLIST TIMEX3 literature-time ( true ) #IMPLIED >
+
+<!ELEMENT temponym-fn ( #PCDATA ) >
+<!ATTLIST temponym-fn type ( period | people | dynasty | reign | person | birth | death | ancient-calendar | level | language | incisive-event | culture | war | invention | building ) #REQUIRED >
