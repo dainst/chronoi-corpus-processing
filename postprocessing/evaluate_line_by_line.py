@@ -206,8 +206,14 @@ class PrintUtil:
     @staticmethod
     def _tab_print(name: str, value):
         template = "%20s: "
-        template += "%8d" if type(value) == int else "%8.5f"
+        template += "%5d" if type(value) == int else "%5.2f"
         print(template % (name, value))
+
+    @classmethod
+    def _tab_print_cols_under_name(cls, name: str, cols: [(str, str)]):
+        print(f"~~~~{name}~~~~")
+        for (k, v) in cols:
+            cls._tab_print(k, v)
 
     @classmethod
     def print_evaluation(cls, evaluation: TaskEvaluation, task_name: str):
@@ -221,14 +227,20 @@ class PrintUtil:
             ("F1", evaluation.f1_score),
             ("F2", evaluation.fn_score(2.0)),
         ]
-
         if evaluation.task_type == TaskType.ATTRIBUTE:
             infos.append(("max_matches", evaluation.max_matches))
             infos.append(("accuracy", evaluation.accuracy))
+        cls._tab_print_cols_under_name(task_name, infos)
 
-        print(f"~~~~{task_name}~~~~")
-        for (k, v) in infos:
-            cls._tab_print(k, v)
+    @classmethod
+    def print_short_info(cls, eval_relaxed_matching: TaskEvaluation, eval_attr_value: TaskEvaluation):
+        infos = [
+            ("Precision", eval_relaxed_matching.precision),
+            ("Recall", eval_relaxed_matching.recall),
+            ("F1", eval_relaxed_matching.f1_score),
+            ("Norm. acc.", eval_attr_value.accuracy),
+        ]
+        cls._tab_print_cols_under_name("Short Info", infos)
 
     @classmethod
     def print_results_csv(cls, file, results: [Result]):
@@ -323,6 +335,14 @@ def main(args):
     if args.print_results_csv:
         import sys
         PrintUtil.print_results_csv(sys.stdout, results)
+    elif args.print_short_info:
+        eval_relaxed_matching = TaskEvaluation(
+            task_type=TaskType.TAG_RELAXED,
+            results=[r for r in results if r.task_type == TaskType.TAG_RELAXED])
+        eval_attr_value = TaskEvaluation(
+            task_type=TaskType.ATTRIBUTE,
+            results=[r for r in results if r.task_type == TaskType.ATTRIBUTE and r.attr_name == "value"])
+        PrintUtil.print_short_info(eval_relaxed_matching, eval_attr_value)
     else:
         to_print = [
             ("RELAXED TAG", TaskType.TAG_RELAXED, filter(lambda r: r.task_type == TaskType.TAG_RELAXED, results)),
@@ -354,6 +374,8 @@ if __name__ == '__main__':
                         help="Format: 'attr:value'. Only include results involving tags with an attribute equal to the value.")
     parser.add_argument("--disregard_with_attr", type=str, default="",
                         help="Format: 'attr:value'. Disregard results involving tags with an attribute equal to the value.")
+    parser.add_argument("--print-short-info", action="store_true",
+                        help="Instead of evaluating every task only print some from relaxed matching and normalisation accuracy.")
     parser.add_argument("--print_results_csv", action="store_true",
                         help="Instead of printing evaluation results, output detailed csv records for each decision.")
 

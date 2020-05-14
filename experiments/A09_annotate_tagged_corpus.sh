@@ -75,7 +75,7 @@ docker exec -it chronoi-pilot bash -c "sed -i 's|\(.\)</TEXT>|\1\n</TEXT>|g' ${b
 docker exec -it chronoi-pilot python3 postprocessing/prepare_tempeval.py --no-fake-dct "${system_dir}/*.xml" "$system_no_temponyms_dir"
 
 # do the evaluation
-docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py "$bronze_dir" "$system_no_temponyms_dir"
+docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py --print-short-info "$bronze_dir" "$system_no_temponyms_dir"
 
 
 # make a single evaluation for each language
@@ -93,7 +93,7 @@ eval_language() {
     for fname in $@; do
         docker exec -t chronoi-pilot cp "${system_no_temponyms_dir}/${fname}" "${dir}/"
     done
-    docker exec -t chronoi-pilot python postprocessing/evaluate_line_by_line.py "$bronze_dir" "$dir"
+    docker exec -t chronoi-pilot python postprocessing/evaluate_line_by_line.py --print-short-info "$bronze_dir" "$dir"
 }
 eval_language "french" $french_texts
 eval_language "german" $german_texts
@@ -106,15 +106,15 @@ docker exec -i chronoi-pilot bash -c "postprocessing/evaluate_line_by_line.py --
 docker exec -it chronoi-pilot bash postprocessing/describe_eval_decisions.sh "$eval_csv"
 
 
-echo "LITERATURE REFERENCES"
-docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py --only_with_attr="literature-time:true" "${bronze_dir}" "${system_no_temponyms_dir}"
-echo "NO LITERATURE REFERENCES"
-docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py --disregard_with_attr="literature-time:true" "${bronze_dir}" "${system_no_temponyms_dir}"
+# echo "LITERATURE REFERENCES"
+# docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py --only_with_attr="literature-time:true" "${bronze_dir}" "${system_no_temponyms_dir}"
+# echo "NO LITERATURE REFERENCES"
+# docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py --disregard_with_attr="literature-time:true" "${bronze_dir}" "${system_no_temponyms_dir}"
 
-echo "CONTEXT: TOPICAL"
-docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py --disregard_with_attr="temporal-context:exploration" "${bronze_dir}" "${system_no_temponyms_dir}"
-echo "CONTEXT: EXPLORATION"
-docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py --disregard_with_attr="temporal-context:topic" "${bronze_dir}" "${system_no_temponyms_dir}"
+# echo "CONTEXT: TOPICAL"
+# docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py --disregard_with_attr="temporal-context:exploration" "${bronze_dir}" "${system_no_temponyms_dir}"
+# echo "CONTEXT: EXPLORATION"
+# docker exec -it chronoi-pilot python postprocessing/evaluate_line_by_line.py --disregard_with_attr="temporal-context:topic" "${bronze_dir}" "${system_no_temponyms_dir}"
 
 
 # chown all files created here to the scripts user.
