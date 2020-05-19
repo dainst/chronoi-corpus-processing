@@ -1,0 +1,62 @@
+diff --git a/resources/french/normalization/resources_normalization_normYearPrefix.txt b/resources/french/normalization/resources_normalization_normYearPrefix.txt
+index e49f838..4da2d7f 100644
+--- a/resources/french/normalization/resources_normalization_normYearPrefix.txt
++++ b/resources/french/normalization/resources_normalization_normYearPrefix.txt
+@@ -4,10 +4,10 @@
+ // This file contains "BCyears" and their normalized expressions.
+ // For example, the normalized value of "BC" is "BC"
+ // FORMAT: "yearPrefix","normalized-yearPrefix"
+-"[Aa]v[\.]? J[\.]?-C[\.]?","BC"
+-"[Aa]pr[\.]? J[\.]?-C[\.]?",""
+-"[Aa]vant[\.]? J[\.]?-C[\.]?","BC"
+-"[Aa]près[\.]? J[\.]?-C[\.]?",""
++"[Aa]v[\.]? J[\.]?[\- ]?C[\.]?","BC"
++"[Aa]p[r]?[\.]? J[\.]?[\- ]?C[\.]?",""
++"[Aa]vant[\.]? J[\.]?[\- ]?C[\.]?","BC"
++"[Aa]près[\.]? J[\.]?[\- ]?C[\.]?",""
+ "[Aa]v[\.]? NSJC","BC"
+ "[Aa]pr[\.]? NSJC",""
+ "[Aa]vant Jésus-Christ","BC"
+diff --git a/resources/french/repattern/resources_repattern_reYearPrefix.txt b/resources/french/repattern/resources_repattern_reYearPrefix.txt
+index 4d7cd97..b8a1dfa 100644
+--- a/resources/french/repattern/resources_repattern_reYearPrefix.txt
++++ b/resources/french/repattern/resources_repattern_reYearPrefix.txt
+@@ -3,10 +3,12 @@
+ // date:   2011-06-10
+ // This file contains regular expression patterns for year numbers (4 digits).
+ // FORMAT: one line is one disjunction of the pattern
+-[Aa]v[\.]? J[\.]?-C[\.]?
+-[Aa]pr[\.]? J[\.]?-C[\.]?
+-[Aa]vant[\.]? J[\.]?-C[\.]?
+-[Aa]près[\.]? J[\.]?-C[\.]?
++// NOTE: Depending on your sentence tagging, these might need special attention
++//       to be recognized correctly. Cf. e.g. TreeTaggerWrapper::improveFrenchSentences()
++[Aa]v[\.]? J[\.]?[\- ]?C[\.]?
++[Aa]p[r]?[\.]? J[\.]?[\- ]?C[\.]?
++[Aa]vant[\.]? J[\.]?[\- ]?C[\.]?
++[Aa]près[\.]? J[\.]?[\- ]?C[\.]?
+ [Aa]v[\.]? NSJC
+ [Aa]pr[\.]? NSJC
+ [Aa]vant Jésus-Christ
+diff --git a/src/de/unihd/dbs/uima/annotator/treetagger/TreeTaggerWrapper.java b/src/de/unihd/dbs/uima/annotator/treetagger/TreeTaggerWrapper.java
+index 44d4f52..8e93347 100644
+--- a/src/de/unihd/dbs/uima/annotator/treetagger/TreeTaggerWrapper.java
++++ b/src/de/unihd/dbs/uima/annotator/treetagger/TreeTaggerWrapper.java
+@@ -536,6 +536,8 @@ public class TreeTaggerWrapper extends JCasAnnotator_ImplBase {
+ 		HashSet<String> hsSentenceBeginnings = new HashSet<String>();
+ 		hsSentenceBeginnings.add("J.-C.");
+ 		hsSentenceBeginnings.add("J-C.");
++		hsSentenceBeginnings.add("J.C.");
++		hsSentenceBeginnings.add("J. C.");
+ 		hsSentenceBeginnings.add("NSJC");
+ 		
+ 		Boolean changes = true;
+@@ -548,6 +550,8 @@ public class TreeTaggerWrapper extends JCasAnnotator_ImplBase {
+ 				
+ 				if ((s1.getCoveredText().endsWith("av.")) ||
+ 						(s1.getCoveredText().endsWith("Av.")) ||
++						(s1.getCoveredText().endsWith("ap.")) ||
++						(s1.getCoveredText().endsWith("Ap.")) ||
+ 						(s1.getCoveredText().endsWith("apr.")) ||
+ 						(s1.getCoveredText().endsWith("Apr.")) ||
+ 						(s1.getCoveredText().endsWith("avant.")) ||
