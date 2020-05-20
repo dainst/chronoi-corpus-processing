@@ -17,10 +17,17 @@ RUN apt-get update && apt-get -y install \
     maven \
     wget \
     libicu-dev \
+    locales \
     python3 \
     python3-pip
 
 RUN pip3 install PyICU
+
+# setup proper locale handling (important for heideltime to pos-tagger interaction)
+RUN sed -i 's/# \(en_US\.UTF-8 .*\)/\1/' /etc/locale.gen && locale-gen
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
 
 # Download and install the tree tagger
 # NOTE: Downloads parameter files for the tree tagger for only some langauges, more language options at:
@@ -39,7 +46,7 @@ RUN chmod 755 /srv/app/treetagger/cmd
 RUN chmod 755 /srv/app/treetagger/lib
 RUN chmod 644 /srv/app/treetagger/lib/*
 
-# Clone heideltime itself and set up the location of the tagger in a new config file
+# Install heideltime itself and set up the location of the tagger in a new config file
 ADD ./heideltime /srv/app/heideltime
 WORKDIR /srv/app
 RUN mv heideltime/conf/config.props .
