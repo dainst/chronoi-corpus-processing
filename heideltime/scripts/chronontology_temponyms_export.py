@@ -144,15 +144,19 @@ class HeidelTimeWriter:
         end = self.__write_epoch_border(self.temponym.end)
         return f"[{begin}, {end}]"
 
-    @staticmethod
-    def __write_year(int_or_none) -> str:
-        return str(None) if int_or_none is None else "%+05d" % int_or_none
-
     def __write_epoch_border(self, eb: EpochBorder) -> str:
         if eb is None:
             return str(None)
         else:
             return f"{self.__write_year(eb.earliest)}, {self.__write_year(eb.latest)}"
+
+    @staticmethod
+    def __write_year(int_or_none) -> str:
+        return str(None) if int_or_none is None else "%+05d" % int_or_none
+
+    def __write_links(self) -> str:
+        # currently only writes a single link
+        return f"['http://chronontology.dainst.org/period/{self.temponym.id}']"
 
     def pattern_lines(self, lang_code: str) -> list:
         return [self.__pattern_line(name) for name in self.temponym.get_names(lang_code)]
@@ -164,7 +168,7 @@ class HeidelTimeWriter:
         return [self.__norm_line(name) for name in self.temponym.get_names(lang_code)]
 
     def __norm_line(self, name) -> str:
-        return '"%s","%s"' % (name, self.write_epoch_range())
+        return '"%s","%s,%s"' % (name, self.write_epoch_range(), self.__write_links())
 
     @classmethod
     def __collect_lines(cls, temponyms: list, lang_code: str, callback) -> list:
@@ -231,18 +235,18 @@ def do_chronontology_export(export_file, output_directory):
         'de': ("de_repattern.txt", "de_norm.txt"),
         'en': ("en_repattern.txt", "en_norm.txt")
     }
-    for lc, file_names in combinations.items():
-        ts = [t for t in usable if t.supports_language(lc)]
+    for lang, file_names in combinations.items():
+        ts = [t for t in usable if t.supports_language(lang)]
 
-        print(f"usable ({lc}): {len(ts)}")
+        print(f"usable ({lang}): {len(ts)}")
 
         write_lines_to_resource_file(
-            HeidelTimeWriter.collect_pattern_lines(ts, lc),
+            HeidelTimeWriter.collect_pattern_lines(ts, lang),
             os.path.join(output_directory, file_names[0])
         )
 
         write_lines_to_resource_file(
-            HeidelTimeWriter.collect_norm_lines(ts, lc),
+            HeidelTimeWriter.collect_norm_lines(ts, lang),
             os.path.join(output_directory, file_names[1])
         )
 

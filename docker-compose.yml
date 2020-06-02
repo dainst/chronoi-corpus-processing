@@ -18,7 +18,7 @@ services:
     image: dainst/chronoi-heideltime:latest
     volumes:
       - ./heideltime/scripts:/srv/app/scripts:rw
-      - ./heideltime/heideltime/resources:/srv/app/heideltime/resources:ro
+      - ./heideltime/heideltime/resources:/srv/app/heideltime/resources:rw
       - ${OUTPUT_DIR}:/srv/output:rw
 
   tempeval3:
