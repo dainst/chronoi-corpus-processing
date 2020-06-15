@@ -64,7 +64,14 @@ class EpochBorder:
         return eb
 
 
-class Temponym:
+class Epoch:
+    """
+    "Epoch" is shorthand for any resource identified by a chronontology
+    it. It can have mutlitple names in different languages, but has a
+    single timespan.
+    (Contrast this with a temponym that has a single name, but multiple
+    epochs.)
+    """
 
     def __init__(self, id_string: str, names: dict):
         """
@@ -75,6 +82,7 @@ class Temponym:
         self.names = names
         self.begin = EpochBorder()
         self.end = EpochBorder()
+        self.parent_ids = set()
 
     @staticmethod
     def from_chronontology_query_result(result: dict):
@@ -82,20 +90,27 @@ class Temponym:
 
         id_string = res["id"]
         names: dict = res["names"]
-        temponym = Temponym(id_string, names)
+        epoch = Epoch(id_string, names)
 
         if "hasTimespan" in res:
+            # NOTE: This assumes that for each chronontology resource
+            #   there is only one timespan with a definite begin and end.
             for timespan in res["hasTimespan"]:
                 if "begin" in timespan and "end" in timespan:
-                    temponym.begin = EpochBorder.from_chronontology_timespan_part(timespan["begin"])
-                    temponym.end = EpochBorder.from_chronontology_timespan_part(timespan["end"])
+                    epoch.begin = EpochBorder.from_chronontology_timespan_part(timespan["begin"])
+                    epoch.end = EpochBorder.from_chronontology_timespan_part(timespan["end"])
                 elif "timeOriginal" in timespan:
                     continue
                 else:
                     print("Timespan not parsable: ", timespan)
-        # else:
-        #     print(f"Resource without a Timespan: {id} (%s)" % names)
-        return temponym
+
+        for key in ["isListedIn", "isPartOf", "fallsWithin", "isSenseOf"]:
+            if "relations" in res and key in res["relations"]:
+                epoch.parent_ids = epoch.parent_ids.union(set(res["relations"][key]))
+        # an epoch must never be listed as its own parent
+        assert epoch.id not in epoch.parent_ids
+
+        return epoch
 
     def has_begin(self) -> bool:
         return self.begin is not None
@@ -107,7 +122,8 @@ class Temponym:
         return self.has_begin() and self.has_end()
 
     def begin_and_end_are_specified(self):
-        return not (self.begin.is_underspecified() or self.end.is_underspecified())
+        return self.has_begin() and self.has_end()\
+               and not (self.begin.is_underspecified() or self.end.is_underspecified())
 
     def supports_language(self, lang_code):
         return lang_code in self.names.keys()
@@ -119,14 +135,54 @@ class Temponym:
         return self.names.get(lang_code, [])
 
     def is_usable(self, lang_codes) -> bool:
-        border_is_defined = self.has_begin_and_end() and self.begin_and_end_are_specified()
         if len(lang_codes) > 0:
-            return border_is_defined
+            return self.begin_and_end_are_specified()
         else:
-            return border_is_defined and self.supports_any_of_languages(lang_codes)
+            return self.begin_and_end_are_specified() and self.supports_any_of_languages(lang_codes)
+
+    def years_covered(self) -> int:
+        if self.begin_and_end_are_specified():
+            return self.end.latest - self.begin.earliest
+        else:
+            return 0
 
     def __str__(self):
-        return f"<{self.id}, {self.names} {HeidelTimeWriter(self).write_epoch_range()}>"
+        return f"<{self.id}, {self.names}>"
+
+
+class Temponym:
+    """
+    A temponym is a single name, in one language, that might be shared
+    by multiple epochs.
+    """
+
+    def __init__(self, name: str, lang: str):
+        self.name = name
+        self.lang = lang
+        self.epochs = []
+
+    def add_epoch(self, epoch: Epoch):
+        # make sure that the epochs name is really correct
+        assert self.name in epoch.get_names(self.lang)
+        # add to the own collection only if isn't already present
+        # (a few cases have the same name twice)
+        if epoch.id not in [e.id for e in self.epochs]:
+            self.epochs.append(epoch)
+
+    def choose_representative_epoch(self) -> Epoch:
+        assert len(self.epochs) > 0
+        if len(self.epochs) == 1:
+            return self.epochs[0]
+        # Remove candidate epochs that have parents who are also candidates
+        candidates = self.epochs.copy()
+        for epoch in self.epochs:
+            if any({e.id for e in candidates}.intersection(epoch.parent_ids)):
+                candidates.remove(epoch)
+        # If there are still candidates, just assume the epoch with the
+        # greatest amount of years covered as the most general one
+        if len(candidates) > 1:
+            candidates = sorted(candidates, key=lambda e: e.years_covered(), reverse=True)
+        return candidates[0]
 
 
 class HeidelTimeWriter:
@@ -138,54 +194,48 @@ class HeidelTimeWriter:
 
     def __init__(self, temponym: Temponym):
         self.temponym = temponym
+        self.epoch = temponym.choose_representative_epoch()
 
     def write_epoch_range(self) -> str:
-        begin = self.__write_epoch_border(self.temponym.begin)
-        end = self.__write_epoch_border(self.temponym.end)
+        begin = self._write_epoch_border(self.epoch.begin)
+        end = self._write_epoch_border(self.epoch.end)
         return f"[{begin}, {end}]"
 
-    def __write_epoch_border(self, eb: EpochBorder) -> str:
+    def _write_epoch_border(self, eb: EpochBorder) -> str:
         if eb is None:
             return str(None)
         else:
-            return f"{self.__write_year(eb.earliest)}, {self.__write_year(eb.latest)}"
+            return f"{self._write_year(eb.earliest)}, {self._write_year(eb.latest)}"
 
     @staticmethod
-    def __write_year(int_or_none) -> str:
+    def _write_year(int_or_none) -> str:
         return str(None) if int_or_none is None else "%+05d" % int_or_none
 
-    def __write_links(self) -> str:
+    def _write_links(self) -> str:
         # currently only writes a single link
-        return f"['http://chronontology.dainst.org/period/{self.temponym.id}']"
+        return f"['http://chronontology.dainst.org/period/{self.epoch.id}']"
 
-    def pattern_lines(self, lang_code: str) -> list:
-        return [self.__pattern_line(name) for name in self.temponym.get_names(lang_code)]
+    def _pattern_line(self) -> str:
+        return f"{self.temponym.name}"
 
-    def __pattern_line(self, name) -> str:  # nopep8: Method cannot be static, used as callback
-        return f"{name}"
-
-    def norm_lines(self, lang_code: str):
-        return [self.__norm_line(name) for name in self.temponym.get_names(lang_code)]
-
-    def __norm_line(self, name) -> str:
-        return '"%s","%s,%s"' % (name, self.write_epoch_range(), self.__write_links())
+    def _norm_line(self) -> str:
+        return '"%s","%s,%s"' % (self.temponym.name, self.write_epoch_range(), self._write_links())
 
     @classmethod
-    def __collect_lines(cls, temponyms: list, lang_code: str, callback) -> list:
+    def _collect_lines(cls, temponyms: [Temponym], lang_code: str, callback) -> list:
         lines = []
         for temponym in temponyms:
             writer = cls(temponym)
-            for name in temponym.get_names(lang_code):
-                lines.append(callback(writer, name))
+            lines.append(callback(writer))
         return sorted_strings(lines, cls.locales[lang_code])
 
     @classmethod
-    def collect_norm_lines(cls, temponyms: list, lang_code: str) -> list:
-        return cls.__collect_lines(temponyms, lang_code, cls.__norm_line)
+    def collect_norm_lines(cls, epochs: list, lang_code: str) -> list:
+        return cls._collect_lines(epochs, lang_code, cls._norm_line)
 
     @classmethod
-    def collect_pattern_lines(cls, temponyms: list, lang_code: str) -> list:
-        return cls.__collect_lines(temponyms, lang_code, cls.__pattern_line)
+    def collect_pattern_lines(cls, epochs: list, lang_code: str) -> list:
+        return cls._collect_lines(epochs, lang_code, cls._pattern_line)
 
 
 def do_chronontology_export(export_file, output_directory):
@@ -197,57 +247,37 @@ def do_chronontology_export(export_file, output_directory):
     assert len(response["results"]) == int(response["total"]), \
         "Reported result length doesn't match actual result length"
 
-    disregard_counts = {"Language not supported": 0}
-    language_keys_count = {"en": 0}
     supported_languages = ["en", "de"]
 
-    # collect some statistics and initiate temponyms for each entry
-    for query_result in response["results"]:
-        resource = query_result["resource"]
-
-        assert (resource is not None)
-        assert ("names" in resource)
-
-        for key in resource["names"]:
-            if key not in supported_languages:
-                increments_count_in_dict(disregard_counts, "Language not supported")
-            else:
-                increments_count_in_dict(language_keys_count, key)
-
-    for key, value in disregard_counts.items():
-        print(key, value)
-
-    for key, value in language_keys_count.items():
-        print(key, value)
-
-    ts = {}
+    # actually create resources from the chronontology dump
+    epochs = {}
     for idx, query_result in enumerate(response["results"]):
-        t = Temponym.from_chronontology_query_result(query_result)
-        ts[t.id] = t
+        epoch = Epoch.from_chronontology_query_result(query_result)
+        epochs[epoch.id] = epoch
+    usable = [e for e in epochs.values() if e.is_usable(supported_languages)]
 
-    usable = [t for _, t in ts.items() if t.is_usable(supported_languages)]
-    unusable = [t for _, t in ts.items() if not t.is_usable(supported_languages)]
+    # transform the usable chronontology resources into temponyms
+    temponyms = {lang: {} for lang in supported_languages}
+    for epoch in usable:
+        for lang in supported_languages:
+            if epoch.supports_language(lang):
+                for name in epoch.get_names(lang):
+                    temponym = temponyms[lang].get(name, Temponym(lang=lang, name=name))
+                    temponym.add_epoch(epoch)
+                    temponyms[lang][name] = temponym
 
-    print("usable/unusable/total: %d/%d/%d" % (len(usable), len(unusable), len(ts)))
-
-    # write pattern and norm files for german and english
-    combinations = {
-        'de': ("de_repattern.txt", "de_norm.txt"),
-        'en': ("en_repattern.txt", "en_norm.txt")
-    }
-    for lang, file_names in combinations.items():
-        ts = [t for t in usable if t.supports_language(lang)]
-
+    # write pattern and norm files for all supported languages
+    for lang in supported_languages:
+        ts = temponyms[lang].values()
         print(f"usable ({lang}): {len(ts)}")
 
         write_lines_to_resource_file(
             HeidelTimeWriter.collect_pattern_lines(ts, lang),
-            os.path.join(output_directory, file_names[0])
+            os.path.join(output_directory, f"{lang}_repattern.txt")
         )
-
         write_lines_to_resource_file(
             HeidelTimeWriter.collect_norm_lines(ts, lang),
-            os.path.join(output_directory, file_names[1])
+            os.path.join(output_directory, f"{lang}_norm.txt")
         )
 
 
@@ -273,3 +303,4 @@ if __name__ == '__main__':
     print("Output dir:", args.out_dir)
 
     do_chronontology_export(args.in_file, args.out_dir)
+
