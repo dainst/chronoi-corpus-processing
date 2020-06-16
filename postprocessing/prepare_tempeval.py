@@ -8,6 +8,7 @@ import glob
 import re
 import xml.sax.saxutils
 
+TEMPONYM_TAGS = ["temponym-fn", "temponym", "dne"]
 
 class Config:
 
@@ -152,9 +153,11 @@ def handle_cleanup(doc: bs4.BeautifulSoup, config: Config) -> str:
     return xml_str
 
 
-def change_temponym_fn_tag_to_timex(tag: bs4.Tag):
+def change_temponym_tag_to_timex_tag(tag: bs4.Tag):
     tag.name = "TIMEX3"
-    tag.attrs["value"] = tag.attrs.get("type", "")
+    value = tag.attrs.get("type", "")
+    tag.attrs.clear()
+    tag.attrs["value"] = value
     tag.attrs["type"] = "TEMPONYM"
 
 
@@ -176,26 +179,33 @@ def change_timex3_tag_to_have_a_tid(tag: bs4.Tag):
     change_timex3_tag_to_have_a_tid.counter += 1
     tag.attrs["tid"] = f"t{change_timex3_tag_to_have_a_tid.counter}"
 
-
+# simple global counter for the above function
 change_timex3_tag_to_have_a_tid.counter = 0
 
+def change_config_to_keep_temponyms_only_instead_of_timex3_only(config) -> Config:
+    # This will remove all non-Temponym Timex3-tags
+    for attr in ["DATE", "TIME", "DURATION", "SET"]:
+        config.remove_tags.append({"tag": "TIMEX3", "attrs": {"type": attr}})
+    # Remove definitions for removal or replacement of temponym tags
+    config.replace_tags = [d for d in config.replace_tags if not d.get("tag", "") in TEMPONYM_TAGS]
+    config.remove_tags = [d for d in config.remove_tags if not d.get("tag", "") in TEMPONYM_TAGS]
+    # This will convert all kinds of temponym markup into tags: <TIMEX3 type="TEMPONYM" />
+    for tagname in TEMPONYM_TAGS:
+        config.replace_tags.append({"tag": tagname, "callback": change_temponym_tag_to_timex_tag})
+    return config
 
 def build_config(args) -> Config:
     config = Config()
-
     # handle the tag removals
     if not args.keep_intervals:
         config.remove_tags.append({"tag": "TIMEX3INTERVAL"})
     if not (args.keep_temponyms or args.only_temponyms):
         config.remove_tags.append({"tag": "TIMEX3", "attrs": {"type": "TEMPONYM"}})
+        for name in TEMPONYM_TAGS:
+            config.remove_tags.append({"tag": name})
     # handle the special case of temponym-output only
     if args.only_temponyms:
-        for attr in [ "DATE", "TIME", "DURATION", "SET"]:
-            config.remove_tags.append({ "tag": "TIMEX3", "attrs": { "type": attr}})
-        config.replace_tags.append({ "tag": "temponym-fn", "callback": change_temponym_fn_tag_to_timex })
-        config.remove_tags = [d for d in config.remove_tags if not d.get("tag") == "temponym-fn"]
-    else:
-        config.remove_tags.append({"tag": "temponym-fn"})
+        config = change_config_to_keep_temponyms_only_instead_of_timex3_only(config)
 
     for attr in args.keep_attr:
         if attr in config.strip_attrs:
@@ -216,7 +226,7 @@ def build_config_for_tagged_corpus() -> Config:
     # add an id to <TIMEX3> tags
     config.replace_tags.append({ "tag": "TIMEX3", "callback": change_timex3_tag_to_have_a_tid})
 
-    # remove <sentence>, <annotation-window> and <literature> tags
+    # remove all non-Timex3-tags
     config.remove_tags = [
         { "tag": "sentence" },
         { "tag": "literature" },
@@ -230,7 +240,7 @@ def build_config_for_tagged_corpus() -> Config:
 
     # set the literature-time attribute on <TIMEX3> if they are contained
     # in a <literature />-Tag
-    # NOTE: ltierature-tags are not removed at this point, because tags higher up
+    # NOTE: literature-tags are not removed at this point, because tags higher up
     # in the hierarchy are handled later than lower ones.
     config.replace_tags.append(
         { "tag": "TIMEX3", "callback": change_timex3_to_have_lit_attr_if_contained_in_lit_tag }
@@ -320,6 +330,8 @@ def main(args):
     # test for special configuration flags first
     if args.a06tagged:
         config = build_config_for_tagged_corpus()
+        if args.only_temponyms:
+            config = change_config_to_keep_temponyms_only_instead_of_timex3_only(config)
     elif args.a06tagged_no_window:
         config = build_config_for_tagged_corpus_without_annotation_window_restriction()
     elif args.pilot_to_corpus:
@@ -368,7 +380,7 @@ if __name__ == "__main__":
     parser.add_argument("--only-temponyms", action="store_true", help="If present, keep all temponym-Tags, remove others and convert <temponym-fn />-tags")
     parser.add_argument("--no-lstrip-lines", action="store_true", help="If present, do not clean whitespace starting each line.")
     parser.add_argument("--no-fake-dct", action="store_true", help="If present, do not add a fake DCT tag.")
-    parser.add_argument("--a06tagged", action="store_true", help="Ignore all other options and use the config for the tagged corpus.")
+    parser.add_argument("--a06tagged", action="store_true", help="Ignore all other options (except --only-temponyms) and use the config for the tagged corpus.")
     parser.add_argument("--a06tagged-no-window", action="store_true", help="Ignore all other options and use the config for the tagged corpus but do not heed the annotation window tags.")
     parser.add_argument("--pilot-to-corpus", action="store_true", help="Ignore all other options and use the config for the pilot conversion.")
     parser.add_argument("--annotation-window", action="store_true", help="Ignore all other options and only truncate to the <annotation-window/>")
