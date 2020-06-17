@@ -5,8 +5,7 @@ import argparse
 import icu
 import json
 import os
-# use the regex instead of the re module for unicode character properties
-import regex as re
+import re
 
 
 def sorted_strings(strings, locale=None):
@@ -44,23 +43,6 @@ class TemponymTransformer:
         name = re.sub(cls.re_paren_after_whitespace, "", name)
         name = re.sub(cls.re_comma_to_end, "", name)
         return name.strip()
-
-    # This matches a single word character followed by two lowercase characters
-    # The lowercase characters are unicode properties to also match umlauts etc.
-    re_three_letter_word_begin = re.compile(r"\b(\w)(\p{Ll}\p{Ll})")
-
-    @classmethod
-    def create_word_begin_regex(cls, name: str) -> str:
-        """
-        Transforms every input word to a regex accepting that word and a downcased
-        version of the word, e.g. "Abcdef Ghi" -> "[Aa]bcdef [Gg]hi"
-        """
-        def repl(match):
-            char = match.group(1)
-            other = char.upper() if char.islower() else char.lower()
-            replacement = f"[{char}{other}]"
-            return replacement + match.group(2)
-        return cls.re_three_letter_word_begin.sub(repl, name)
 
 
 class EpochBorder:

@@ -24,7 +24,6 @@ RUN pip3 install nltk \
     lxml \
     tablign \
     csvkit \
-    regex \
     pytest
 
 # download tokenization data for nltk
