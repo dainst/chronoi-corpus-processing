@@ -1,12 +1,11 @@
 #!/bin/bash
 
-# read the relevant directory from the command line, this should have been populated
-# by the "chronontology_temponyms_export.py"-Skript
+# First argument is the directory with temponym files populated by the script
+# "chronontology_temponyms_export.py"
 dir_temponym_files="${1}"
 
-# these are expected to be in place in the container
-dir_heideltime_app=/srv/app/heideltime
-config_file=/srv/app/config.props
+# Second argument is the directory of heideltime to search/create the resource files at
+dir_heideltime_app="${2}"
 
 # replace pipe chars in the automatically created patterns as they confuse heideltime
 sed -i 's/\s*|//g' "$dir_temponym_files"/*

@@ -2,14 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import icu
 import json
 import os
-import icu
-
-
-def increments_count_in_dict(dictionary: dict, k):
-    count = dictionary.setdefault(k, 0)
-    dictionary[k] = count + 1
+# use the regex instead of the re module for unicode character properties
+import regex as re
 
 
 def sorted_strings(strings, locale=None):
@@ -27,7 +24,43 @@ def write_file_with_permissions(path: str, content: str, chmod_mode=0o776, open_
 
 def write_lines_to_resource_file(strings: list, path: str):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    write_file_with_permissions(path=path, content="\n".join(strings))
+    write_file_with_permissions(path=path, content="\n".join(strings), chmod_mode=0o644)
+
+
+class TemponymTransformer:
+    """
+    This gathers some methods to transform the names used  for temponyms during input
+    (where they are cleaned from additions that are unlikely to appear in texts
+    """
+
+    # Matches explanatory parens as in "Terra sigillata (pottery style)"
+    re_paren_after_whitespace = re.compile(r"\s+\([^\)]*\)")
+
+    # Matches explanatory additions as in "Third Crusade, 1189-1192"
+    re_comma_to_end = re.compile(r", .*$")
+
+    @classmethod
+    def clean(cls, name: str) -> str:
+        name = re.sub(cls.re_paren_after_whitespace, "", name)
+        name = re.sub(cls.re_comma_to_end, "", name)
+        return name.strip()
+
+    # This matches a single word character followed by two lowercase characters
+    # The lowercase characters are unicode properties to also match umlauts etc.
+    re_three_letter_word_begin = re.compile(r"\b(\w)(\p{Ll}\p{Ll})")
+
+    @classmethod
+    def create_word_begin_regex(cls, name: str) -> str:
+        """
+        Transforms every input word to a regex accepting that word and a downcased
+        version of the word, e.g. "Abcdef Ghi" -> "[Aa]bcdef [Gg]hi"
+        """
+        def repl(match):
+            char = match.group(1)
+            other = char.upper() if char.islower() else char.lower()
+            replacement = f"[{char}{other}]"
+            return replacement + match.group(2)
+        return cls.re_three_letter_word_begin.sub(repl, name)
 
 
 class EpochBorder:
@@ -162,8 +195,8 @@ class Temponym:
         self.epochs = []
 
     def add_epoch(self, epoch: Epoch):
-        # make sure that the epochs name is really correct
-        assert self.name in epoch.get_names(self.lang)
+        # make sure that the epochs name is really present
+        assert self.name in [TemponymTransformer.clean(n) for n in epoch.get_names(self.lang)]
         # add to the own collection only if isn't already present
         # (a few cases have the same name twice)
         if epoch.id not in [e.id for e in self.epochs]:
@@ -207,6 +240,9 @@ class HeidelTimeWriter:
         else:
             return f"{self._write_year(eb.earliest)}, {self._write_year(eb.latest)}"
 
+    def _write_name(self) -> str:
+        return self.temponym.name
+
     @staticmethod
     def _write_year(int_or_none) -> str:
         return str(None) if int_or_none is None else "%+05d" % int_or_none
@@ -216,10 +252,10 @@ class HeidelTimeWriter:
         return f"['http://chronontology.dainst.org/period/{self.epoch.id}']"
 
     def _pattern_line(self) -> str:
-        return f"{self.temponym.name}"
+        return self._write_name()
 
     def _norm_line(self) -> str:
-        return '"%s","%s,%s"' % (self.temponym.name, self.write_epoch_range(), self._write_links())
+        return '"%s","%s,%s"' % (self._write_name(), self.write_epoch_range(), self._write_links())
 
     @classmethod
     def _collect_lines(cls, temponyms: [Temponym], lang_code: str, callback) -> list:
@@ -262,6 +298,7 @@ def do_chronontology_export(export_file, output_directory):
         for lang in supported_languages:
             if epoch.supports_language(lang):
                 for name in epoch.get_names(lang):
+                    name = TemponymTransformer.clean(name)
                     temponym = temponyms[lang].get(name, Temponym(lang=lang, name=name))
                     temponym.add_epoch(epoch)
                     temponyms[lang][name] = temponym
