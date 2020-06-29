@@ -245,6 +245,8 @@ class HeidelTimeWriter:
         for temponym in temponyms:
             writer = cls(temponym)
             lines.append(callback(writer))
+        # TODO: This leads to different sort orders in pattern and norm files
+        #       and should be avoided if possible.
         return sorted_strings(lines, cls.locales[lang_code])
 
     @classmethod

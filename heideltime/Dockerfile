@@ -63,9 +63,6 @@ RUN sed -i 's|^treeTaggerHome =.*$|treeTaggerHome = /srv/app/treetagger|g' confi
 # This needs the heideltime resource directory structure in place
 ADD ./heideltime/resources /srv/app/heideltime/resources
 ADD ./scripts /srv/app/scripts
-WORKDIR /srv/app/scripts
-RUN python3 chronontology_temponyms_export.py -i resources/chronontology.json -o /tmp/temponyms
-RUN ./prepare_heideltime_temponym_files.sh /tmp/temponyms /srv/app/heideltime
 RUN sed -i 's|^considerTemponym =.*$|considerTemponym = true|g' /srv/app/config.props
 
 # Build heideltime itself
