@@ -56,6 +56,19 @@ def _tag_to_ner_name_default(tag: bs4.Tag, default="") -> str:
 
     return result
 
+def _tag_to_ner_name_only_non_timex(tag: bs4.Tag, default="") -> str:
+    if not isinstance(tag, bs4.Tag):
+        return default
+    if tag.name == "dne":
+        return tag.get("type", default)
+    return default
+
+def _tag_to_ner_name_only_time_stuff(tag: bs4.Tag, default="") -> str:
+    if not isinstance(tag, bs4.Tag):
+        return default
+    if tag.name in ["timex3", "temponym", "TIMEX3"]:
+        return tag.name.lower()
+    return default
 
 # A non-default tag function returning an NER-Range only for literature tags
 def _tag_to_ner_name_literature(tag: bs4.Tag, default="") -> str:
@@ -199,6 +212,10 @@ def main(args: argparse.Namespace):
 
     if args.literature:
         _tag_to_ner_name_fn = _tag_to_ner_name_literature
+    elif args.nes_only:
+        _tag_to_ner_name_fn = _tag_to_ner_name_only_non_timex
+    elif args.timex_only:
+        _tag_to_ner_name_fn = _tag_to_ner_name_only_time_stuff
     else:
         _tag_to_ner_name_fn = _tag_to_ner_name_default
 
@@ -232,7 +249,9 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("input", type=str, help="A directory or single file to use as input.")
-    parser.add_argument("--literature", action="store_true", help="If set, only mark <literature/> contents as ners.")
+    parser.add_argument("--literature", action="store_true", help="If set, only mark <literature/> contents as nes.")
+    parser.add_argument("--nes-only", action="store_true", help="If set, only mark named entity contents, not time expressions as nes.")
+    parser.add_argument("--timex-only", action="store_true", help="If set, only mark time expression contents, not other nes.")
 
     main(parser.parse_args())
 
