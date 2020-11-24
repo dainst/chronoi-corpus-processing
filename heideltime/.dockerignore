@@ -1,0 +1,6 @@
+heideltime/.git
+heideltime/target
+heideltime/class
+Dockerfile
+publish_image.sh
+.dockerignore

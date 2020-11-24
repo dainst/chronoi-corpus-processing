@@ -8,20 +8,20 @@
 # for temponyms extracted from a chronontology dump.
 ##
 
-FROM ubuntu:18.04
+FROM maven:3-jdk-8
 
 # install dependencies
-RUN apt-get update && apt-get -y install \
-    openjdk-8-jdk \
-    git \
-    maven \
+RUN apt-get update \
+  && apt-get -y install \
     wget \
-    libicu-dev \
     locales \
+    # Needed for pip install below, pkg-config lets pip find the icu version
+    pkg-config \
+    libicu-dev \
+    # python deps are needed for ./scripts
     python3 \
-    python3-pip
-
-RUN pip3 install PyICU
+    python3-pip \
+  && pip3 install PyICU
 
 # setup proper locale handling (important for heideltime to pos-tagger interaction)
 RUN sed -i 's/# \(en_US\.UTF-8 .*\)/\1/' /etc/locale.gen && locale-gen
@@ -33,47 +33,37 @@ ENV LC_ALL en_US.UTF-8
 # NOTE: Downloads parameter files for the tree tagger for only some langauges, more language options at:
 #       https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/#parfiles
 WORKDIR /srv/app/treetagger
-RUN wget https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/tree-tagger-linux-3.2.2.tar.gz
-RUN wget https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/tagger-scripts.tar.gz
-RUN wget https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/install-tagger.sh
-RUN wget https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/english.par.gz
-RUN wget https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/german.par.gz
-RUN wget https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/french.par.gz
-RUN wget https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/italian.par.gz
-RUN wget https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/spanish.par.gz
-RUN sh install-tagger.sh
-RUN chmod 755 /srv/app/treetagger/cmd
-RUN chmod 755 /srv/app/treetagger/lib
-RUN chmod 644 /srv/app/treetagger/lib/*
+RUN  wget --quiet https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/tree-tagger-linux-3.2.2.tar.gz \
+  && wget --quiet https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/tagger-scripts.tar.gz \
+  && wget --quiet https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/install-tagger.sh \
+  && wget --quiet https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/english.par.gz \
+  && wget --quiet https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/german.par.gz \
+  && wget --quiet https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/french.par.gz \
+  && wget --quiet https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/italian.par.gz \
+  && wget --quiet https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/spanish.par.gz \
+  # We need to extract this ourselves as the version in the install-tagger.sh might differ
+  && tar -zxf tree-tagger-linux-3.2.2.tar.gz \
+  && sh install-tagger.sh \
+  && chmod 755 cmd lib \
+  && chmod 644 lib/*
 
 # Install heideltime dependencies
-# NOTE: This modifies the pom.xml to include dependencies in the standalone jar.
 WORKDIR /srv/app/heideltime
 ADD heideltime/pom.xml .
-ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/
-RUN sed -i 's|<scope>provided</scope>||g' pom.xml
 RUN mvn verify clean --fail-never
 
-# Setup the heideltime config to work with the tree tagger
-WORKDIR /srv/app
-ADD heideltime/conf/config.props .
-RUN sed -i 's|^treeTaggerHome =.*$|treeTaggerHome = /srv/app/treetagger|g' config.props
-
-# Prepare temponym files tagging and enable temponym tagging in the config
-# This needs the heideltime resource directory structure in place
-ADD ./heideltime/resources /srv/app/heideltime/resources
-ADD ./scripts /srv/app/scripts
-RUN sed -i 's|^considerTemponym =.*$|considerTemponym = true|g' /srv/app/config.props
-
 # Build heideltime itself
-ADD ./heideltime /srv/app/heideltime
-WORKDIR /srv/app/heideltime
-RUN mvn package
+ADD . /srv/app/
+RUN sed -i 's|<scope>provided</scope>||g' pom.xml \
+  && mvn package \
+  # Setup the config to work with the tree tagger and consider temponyms
+  && cp conf/config.props /srv/app \
+  && sed -i 's|^treeTaggerHome =.*$|treeTaggerHome = /srv/app/treetagger|g' ../config.props \
+  && sed -i 's|^considerTemponym =.*$|considerTemponym = true|g' ../config.props \
+  # Expose the "java -jar ..." with our config as a simpler "heideltime" command
+  && echo '#!/bin/bash\njava -jar /srv/app/heideltime/target/de.unihd.dbs.heideltime.standalone.jar -c /srv/app/config.props "$@" \n' \
+  > /bin/heideltime \
+  && chmod a+x /bin/heideltime
 
-# Expose the "java -jar ..." with our config as a simpler "heideltime" command
-RUN echo '#!/bin/bash \n\
-java -jar /srv/app/heideltime/target/de.unihd.dbs.heideltime.standalone.jar -c /srv/app/config.props "$@" \n\
-' > /bin/heideltime && chmod a+x /bin/heideltime
-
-# keep the container running when started
+# just keep the container running when started
 CMD /bin/sleep infinity
